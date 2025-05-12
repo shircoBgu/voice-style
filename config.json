@@ -1,0 +1,29 @@
+{
+  "dataset": {
+    "iemocap_path": "data/IEMOCAP",
+    "vctk_path": "data/VCTK",
+    "crema_d_path": "data/CREMA-D",
+    "sample_rate": 22050,
+    "n_mels": 80,
+    "segment_length": 128
+  },
+  "training": {
+    "batch_size": 16,
+    "epochs": 100,
+    "learning_rate": 0.0002,
+    "log_interval": 10,
+    "save_interval": 5,
+    "checkpoint_dir": "models/checkpoints"
+  },
+  "model": {
+    "encoder_hidden_dim": 256,
+    "bottleneck_dim": 32,
+    "emotion_embedding_dim": 128,
+    "use_emotion_loss": true
+  },
+  "paths": {
+    "pretrained_emotion_classifier": "models/emotion_classifier.pt",
+    "pretrained_hifigan": "models/hifigan",
+    "output_dir": "outputs"
+  }
+}
