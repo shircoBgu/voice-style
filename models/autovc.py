@@ -1,8 +1,10 @@
 import torch
 import torch.nn as nn
 from models.content_encoder import ContentEncoder
+from models.postnet import Postnet
 from models.speaker_encoder import SpeakerEncoder
 from models.decoder import Decoder
+
 
 class AutoVC(nn.Module):
     def __init__(self,
@@ -26,6 +28,8 @@ class AutoVC(nn.Module):
         self.decoder = Decoder(input_dim=bottleneck_dim,
                                hidden_dim=256,
                                output_dim=mel_dim)
+        self.postnet = Postnet()
+        self.use_postnet = False
 
     def forward(self, source_mel, target_mel, emotion_embedding):
         """
@@ -48,6 +52,11 @@ class AutoVC(nn.Module):
         bottleneck = torch.cat([content_emb, speaker_emb, emotion_emb], dim=-1)  # (B, T, 384)
 
         # 5. Decode to mel-spectrogram
-        mel_pred = self.decoder(bottleneck)  # (B, T, 80)
+        mel_out = self.decoder(bottleneck)  # (B, T, 80)
+
+        if self.use_postnet:
+            mel_pred = mel_out + self.postnet(mel_out)  # residual
+        else:
+            mel_pred = mel_out
 
         return mel_pred
