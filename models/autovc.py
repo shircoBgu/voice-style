@@ -13,6 +13,7 @@ class AutoVC(nn.Module):
                  content_emb_dim=128,
                  speaker_emb_dim=128,
                  emotion_emb_dim=128,
+                 num_emotions=5,
                  bottleneck_dim=384,  # C + S + E
                  mel_dim=80):
         super(AutoVC, self).__init__()
@@ -28,14 +29,25 @@ class AutoVC(nn.Module):
         self.decoder = Decoder(input_dim=bottleneck_dim,
                                hidden_dim=256,
                                output_dim=mel_dim)
+        self.emotion_embedding = nn.Embedding(num_emotions, emotion_emb_dim)
         self.postnet = Postnet()
         self.use_postnet = False
 
-    def forward(self, source_mel, target_mel, emotion_embedding):
+    def forward(self, source_mel, target_mel, emotion_label):
         """
-        source_mel: (B, T, 80) - source audio
-        target_mel: (B, T', 80) - reference audio for speaker identity
-        emotion_embedding: (B, 128) - vector representing desired emotion
+        Forward pass of the AutoVC model.
+
+        Args:
+            source_mel (Tensor): Tensor of shape (B, T, 80)
+                The mel-spectrogram of the source speaker's utterance.
+            target_mel (Tensor): Tensor of shape (B, T', 80)
+                A reference mel-spectrogram of the target speaker (for identity).
+            emotion_label (Tensor): Tensor of shape (B,)
+                Categorical emotion label index (e.g., 0 = 'neutral', 1 = 'happy', etc.).
+
+        Returns:
+            mel_pred (Tensor): Reconstructed mel-spectrogram of shape (B, T, 80)
+                in the target speaker's voice and intended emotional style.
         """
 
         # 1. Encode source content
@@ -46,10 +58,11 @@ class AutoVC(nn.Module):
         speaker_emb = speaker_emb.unsqueeze(1).expand(-1, content_emb.size(1), -1)  # (B, T, 128)
 
         # 3. Broadcast emotion vector over time
-        emotion_emb = emotion_embedding.unsqueeze(1).expand(-1, content_emb.size(1), -1)  # (B, T, 128)
+        emotion_vec = self.emotion_embedding(emotion_label)  # (B, 128)
+        emotion_vec = emotion_vec.unsqueeze(1).expand(-1, content_emb.size(1), -1)  # (B, T, 128)
 
         # 4. Fuse all embeddings (C + S + E)
-        bottleneck = torch.cat([content_emb, speaker_emb, emotion_emb], dim=-1)  # (B, T, 384)
+        bottleneck = torch.cat([content_emb, speaker_emb, emotion_vec], dim=-1)  # (B, T, 384)
 
         # 5. Decode to mel-spectrogram
         mel_out = self.decoder(bottleneck)  # (B, T, 80)
