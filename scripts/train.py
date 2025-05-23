@@ -1,3 +1,4 @@
+import os
 import torch
 from torch.nn import functional as F
 from tqdm import tqdm
@@ -58,3 +59,46 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
 
     print(f"Avg Recon: {avg_recon:.4f} | Avg CE: {avg_ce:.4f}")
     return avg_recon, avg_ce
+
+
+def train(model, emotion_classifier, dataloader,
+          optimizer, optimizer_cls, device,
+          num_epochs=100, lambda_ce=0.5,
+          checkpoint_dir="checkpoints"):
+    """
+    Trains the model over multiple epochs.
+    Args:
+        model: AutoVC model
+        emotion_classifier: auxiliary emotion classifier
+        dataloader: PyTorch DataLoader
+        optimizer: optimizer for the AutoVC model
+        optimizer_cls: optimizer for the classifier
+        device: "cuda" or "cpu"
+        num_epochs: number of epochs to train
+        lambda_ce: weight for emotion classification loss
+        checkpoint_dir: directory to save model checkpoints
+    """
+
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    history = {"recon": [], "emotion": []}
+
+    for epoch in range(1, num_epochs + 1):
+        print(f"\n🔁 Epoch {epoch}/{num_epochs}")
+
+        avg_recon, avg_ce = train_one_epoch(
+            model, emotion_classifier, dataloader,
+            optimizer, optimizer_cls, device,
+            lambda_ce
+        )
+
+        print(f"📉 Avg Recon Loss: {avg_recon:.4f} | Avg Emotion Loss: {avg_ce:.4f}")
+
+        # Save model checkpoints
+        torch.save(model.state_dict(), os.path.join(checkpoint_dir, f"autovc_epoch{epoch}.pt"))
+        torch.save(emotion_classifier.state_dict(), os.path.join(checkpoint_dir, f"emotion_cls_epoch{epoch}.pt"))
+
+        # Store loss history
+        history["recon"].append(avg_recon)
+        history["emotion"].append(avg_ce)
+
+    return history
