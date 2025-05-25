@@ -95,7 +95,7 @@ def train(model, emotion_classifier, dataloader,
     history = {"recon": [], "emotion": []}
 
     for epoch in range(1, num_epochs + 1):
-        print(f"\n🔁 Epoch {epoch}/{num_epochs}")
+        print(f"\nEpoch {epoch}/{num_epochs}")
 
         avg_recon, avg_ce, avg_spk = train_one_epoch(
             model, emotion_classifier, dataloader,
@@ -103,7 +103,7 @@ def train(model, emotion_classifier, dataloader,
             lambda_ce, lambda_spk
         )
 
-        print(f"📉 Recon: {avg_recon:.4f} | Emotion: {avg_ce:.4f} | Speaker: {avg_spk:.4f}")
+        print(f"Recon: {avg_recon:.4f} | Emotion: {avg_ce:.4f} | Speaker: {avg_spk:.4f}")
 
         # Save model checkpoints
         torch.save(model.state_dict(), os.path.join(checkpoint_dir, f"autovc_epoch{epoch}.pt"))
