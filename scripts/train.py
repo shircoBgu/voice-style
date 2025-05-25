@@ -14,7 +14,7 @@ from tqdm import tqdm
 # lambda_ce: weight for the emotion classification loss
 
 def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_cls,
-                    device, lambda_ce=0.5):
+                    device, lambda_ce=0.5, lambda_spk=0.5):
     # Puts both models into training mode.
     model.train()
     emotion_classifier.train()
@@ -22,6 +22,7 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
     # Initialize accumulators to track average losses across all batches.
     total_recon_loss = 0
     total_emotion_loss = 0
+    total_speaker_loss = 0
 
     for source_mel, target_mel, emotion_label in tqdm(dataloader):
         source_mel = source_mel.to(device)  # (B, T, 80)
@@ -41,8 +42,17 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
         # Compares it to the ground truth emotion label using cross-entropy loss
         ce_loss = F.cross_entropy(logits, emotion_label)
 
+        # === Speaker Consistency Loss ===
+        with torch.no_grad():
+            target_speaker_emb = model.speaker_encoder(target_mel)  # (B, D)
+        pred_speaker_emb = model.speaker_encoder(mel_pred.detach())  # (B, D)
+
+        # Cosine similarity loss
+        cos_sim = F.cosine_similarity(pred_speaker_emb, target_speaker_emb, dim=-1)  # (B,)
+        speaker_loss = 1.0 - cos_sim.mean()  # (scalar)
+
         # === Combine losses ===
-        total_loss = recon_loss + lambda_ce * ce_loss
+        total_loss = recon_loss + lambda_ce * ce_loss + lambda_spk * speaker_loss
 
         # === Backprop ===
         optimizer.zero_grad()
@@ -53,17 +63,19 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
 
         total_recon_loss += recon_loss.item()
         total_emotion_loss += ce_loss.item()
+        total_speaker_loss += speaker_loss.item()
 
     avg_recon = total_recon_loss / max(len(dataloader), 1)
     avg_ce = total_emotion_loss / max(len(dataloader), 1)
+    avg_spk = total_speaker_loss / max(len(dataloader), 1)
 
-    print(f"Avg Recon: {avg_recon:.4f} | Avg CE: {avg_ce:.4f}")
-    return avg_recon, avg_ce
+    print(f"Avg Recon: {avg_recon:.4f} | Avg CE: {avg_ce:.4f} | Avg Spk: {avg_spk:.4f}")
+    return avg_recon, avg_ce, avg_spk
 
 
 def train(model, emotion_classifier, dataloader,
           optimizer, optimizer_cls, device,
-          num_epochs=100, lambda_ce=0.5,
+          num_epochs=100, lambda_ce=0.5, lambda_spk=0.5,
           checkpoint_dir="checkpoints"):
     """
     Trains the model over multiple epochs.
@@ -85,13 +97,13 @@ def train(model, emotion_classifier, dataloader,
     for epoch in range(1, num_epochs + 1):
         print(f"\n🔁 Epoch {epoch}/{num_epochs}")
 
-        avg_recon, avg_ce = train_one_epoch(
+        avg_recon, avg_ce, avg_spk = train_one_epoch(
             model, emotion_classifier, dataloader,
             optimizer, optimizer_cls, device,
-            lambda_ce
+            lambda_ce, lambda_spk
         )
 
-        print(f"📉 Avg Recon Loss: {avg_recon:.4f} | Avg Emotion Loss: {avg_ce:.4f}")
+        print(f"📉 Recon: {avg_recon:.4f} | Emotion: {avg_ce:.4f} | Speaker: {avg_spk:.4f}")
 
         # Save model checkpoints
         torch.save(model.state_dict(), os.path.join(checkpoint_dir, f"autovc_epoch{epoch}.pt"))
@@ -100,5 +112,6 @@ def train(model, emotion_classifier, dataloader,
         # Store loss history
         history["recon"].append(avg_recon)
         history["emotion"].append(avg_ce)
+        history["speaker"].append(avg_spk)
 
     return history

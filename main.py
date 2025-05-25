@@ -1,7 +1,9 @@
 import argparse
 import os
-from scripts.train import train_model
-from scripts.inference import run_inference
+import torch
+from scripts.train import train
+from models.autovc import AutoVC
+from scripts.inference import inference
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Voice Style Transfer with Emotion Conditioning")
@@ -14,8 +16,16 @@ def parse_args():
 def main():
     # Set up argument parsing (so we can easily switch between training/inference)
     args = parse_args()
+    # === Model & Classifier ===
+    model = AutoVC().to(device)
+    emotion_classifier = EmotionClassifier(num_emotions=config["num_emotions"]).to(device)
+
     if args.mode == 'train':
-        train_model(args.config)
+        train(model, emotion_classifier, train_loader,
+              optimizer, optimizer_cls, device,
+              num_epochs=config["num_epochs"],
+              lambda_ce=config["lambda_ce"],
+              checkpoint_dir=config["checkpoint_dir"])
     elif args.mode == 'inference':
         run_inference(args.config)
 
