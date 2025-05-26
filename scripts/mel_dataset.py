@@ -1,47 +1,28 @@
-import os
 import torch
-import torchaudio
 from torch.utils.data import Dataset
-import json
+import numpy as np
+import pandas as pd
 
 class MelDataset(Dataset):
-    def __init__(self, metadata_path, emotion_map=None, sample_rate=16000, n_mels=80):
-        """
-        metadata_path: path to JSON or CSV with info on audio paths, speaker and emotion
-        emotion_map: dict to normalize emotion labels (e.g., {"happiness": "happy"})
-        """
-        with open(metadata_path, 'r') as f:
-            self.metadata = json.load(f)
-        
-        self.emotion_map = emotion_map if emotion_map else {}
-        self.sample_rate = sample_rate
-        self.n_mels = n_mels
-        self.mel_transform = torchaudio.transforms.MelSpectrogram(
-            sample_rate=self.sample_rate,
-            n_mels=self.n_mels
-        )
+    def __init__(self, csv_path, speakers_map=None, emotions_map=None):
+        self.df = pd.read_csv(csv_path)
+        if speakers_map is None:
+            self.speaker2idx = {spk: i for i, spk in enumerate(sorted(self.df['speaker_id'].unique()))}
+        else:
+            self.speaker2idx = speakers_map
+        if emotions_map is None:
+            self.emo2idx = {emo: i for i, emo in enumerate(sorted(self.df['emotion_label'].unique()))}
+        else:
+            self.emo2idx = emotions_map
 
     def __len__(self):
-        return len(self.metadata)
+        return len(self.df)
 
     def __getitem__(self, idx):
-        item = self.metadata[idx]
-        
-        # Load audio
-        waveform, sr = torchaudio.load(item['path'])
-        if sr != self.sample_rate:
-            waveform = torchaudio.functional.resample(waveform, sr, self.sample_rate)
-
-        # Convert to mono if stereo
-        if waveform.shape[0] > 1:
-            waveform = torch.mean(waveform, dim=0, keepdim=True)
-        
-        # Convert to Mel
-        mel = self.mel_transform(waveform).squeeze(0)  # shape: [n_mels, time]
-
-        # Speaker ID and emotion
-        speaker = item['speaker']
-        emotion = item['emotion'].lower()
-        emotion = self.emotion_map.get(emotion, emotion)  # map to unified label
-
-        return mel, speaker, emotion
+        row = self.df.iloc[idx]
+        mel = np.load(row['mel_path'])    # (80, 251)
+        mel = torch.tensor(mel.T, dtype=torch.float32) #(251,80) as train.py expected
+        speaker_id = self.speaker2idx[row['speaker_id']]
+        emotion_label = self.emo2idx[row['emotion_label']]
+        # return mel, speaker_id, emotion_label
+        return mel, mel, emotion_label  # source_mel, target_mel, emotion_label for training phase
