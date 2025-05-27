@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-from models.content_encoder import ContentEncoder
-from models.postnet import Postnet
-from models.speaker_encoder import SpeakerEncoder
-from models.decoder import Decoder
+from models.autoVC.content_encoder import ContentEncoder
+from models.autoVC.postnet import Postnet
+from models.autoVC.speaker_encoder import SpeakerEncoder
+from models.autoVC.decoder import Decoder
 
 
 class AutoVC(nn.Module):

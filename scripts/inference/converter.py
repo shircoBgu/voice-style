@@ -8,6 +8,7 @@ from scipy.io.wavfile import write
 from hifigan.models import Generator
 from hifigan.env import AttrDict
 
+
 class VoiceConverter:
     def __init__(self, config_path="config.json"):
         with open(config_path) as f:
@@ -17,7 +18,6 @@ class VoiceConverter:
         self.emotion_map = {
             0: "neutral", 1: "happy", 2: "sad", 3: "angry", 4: "surprised"
         }
-
         self.autovc_model = None
         self.hifigan_model = None
 
@@ -38,15 +38,21 @@ class VoiceConverter:
         self.autovc_model = model
 
     def load_hifigan(self):
-        hifigan_path = self.config["paths"]["pretrained_hifigan"]
-        config_file = os.path.join(hifigan_path, "config.json")
+        hifigan_dir = self.config["paths"]["pretrained_hifigan"]
+        config_file = os.path.join(hifigan_dir, "config.json")
+        checkpoint_file = os.path.join(hifigan_dir, "generator_v1")
+
+        # Ensure config and model file are loaded from the same directory
+        if not os.path.exists(config_file):
+            raise FileNotFoundError(f"Missing config.json in {hifigan_dir}")
+        if not os.path.exists(checkpoint_file):
+            raise FileNotFoundError(f"Missing generator_v1 in {hifigan_dir}")
+
         with open(config_file) as f:
             config = AttrDict(json.load(f))
 
         model = Generator(config).to(self.device)
-
-        checkpoint_path = os.path.join(hifigan_path, "generator_v1")
-        ckpt = torch.load(checkpoint_path, map_location=self.device)
+        ckpt = torch.load(checkpoint_file, map_location=self.device)
         model.load_state_dict(ckpt['generator'] if 'generator' in ckpt else ckpt)
 
         model.eval()

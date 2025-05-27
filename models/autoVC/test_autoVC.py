@@ -1,5 +1,5 @@
 import torch
-from models.autovc import AutoVC
+from models.autoVC.autovc import AutoVC
 
 # Create dummy inputs
 batch_size = 4

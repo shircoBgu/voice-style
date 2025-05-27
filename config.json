@@ -24,7 +24,7 @@
   },
   "paths": {
     "pretrained_emotion_classifier": "models/emotion_classifier.pt",
-    "pretrained_hifigan": "models/hifigan",
+    "pretrained_hifigan": "models/hifigan_pretrained",
     "output_dir": "outputs"
   }
 }

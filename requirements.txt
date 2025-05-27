@@ -9,7 +9,7 @@ voice-style-project/
 │   └── training_experiments.ipynb
 │
 ├── models/
-│   ├── hifigan/          # HiFi-GAN model files (checkpoint, config, etc.)
+│   ├── hifigan_pretrained/          # HiFi-GAN model files (checkpoint, config, etc.)
 │   └── autoVC/           # AutoVC-style encoder/decoder
 │
 ├── utils/

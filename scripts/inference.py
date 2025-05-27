@@ -2,7 +2,7 @@
 # Argument parsing is handled in main.py
 
 from inference.converter import VoiceConverter
-from models.autovc import AutoVC
+from models.autoVC.autovc import AutoVC
 
 def inference(config, source_path, target_path, emotion_label, output_path):
     """
