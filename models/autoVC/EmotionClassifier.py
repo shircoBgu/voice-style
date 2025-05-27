@@ -1,3 +1,5 @@
+from torch import nn
+
 class EmotionClassifier(nn.Module):
     def __init__(self, num_classes=9):
     #emotion: angry, excited, fear, sad, surprised, frustrated, happy, disappointed and neutral
