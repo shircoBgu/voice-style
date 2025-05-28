@@ -58,6 +58,7 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
         optimizer.zero_grad()
         optimizer_cls.zero_grad()
         total_loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
         optimizer_cls.step()
 
@@ -114,4 +115,5 @@ def train(model, emotion_classifier, dataloader,
         history["emotion"].append(avg_ce)
         history["speaker"].append(avg_spk)
 
+    torch.save(history, "train_history.pt")
     return history

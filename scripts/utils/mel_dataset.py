@@ -1,3 +1,5 @@
+import os
+
 import torch
 from torch.utils.data import Dataset
 import numpy as np
@@ -20,6 +22,8 @@ class MelDataset(Dataset):
 
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
+        if not os.path.exists(row['mel_path']):
+            raise FileNotFoundError(f"Missing mel file: {row['mel_path']}")
         mel = np.load(row['mel_path'])    # (80, 251)
         mel = torch.tensor(mel.T, dtype=torch.float32) #(251,80) as train.py expected
         speaker_id = self.speaker2idx[row['speaker_id']]

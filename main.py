@@ -41,7 +41,7 @@ def main():
                                 drop_last=True)
 
         # Initialize models
-        model = AutoVC(num_emotions=config["model"]["num_emotions"]).to(device)
+        model = AutoVC().to(device)
         emotion_classifier = EmotionClassifier(num_emotions=config["model"]["num_emotions"]).to(device)
 
         # Initialize optimizers
@@ -60,7 +60,7 @@ def main():
     # === INFERENCE MODE ===
     elif args.mode == 'inference':
         # Ensure all necessary arguments are provided for inference
-        if not all([args.source, args.target, args.emotion is not None, args.output]):
+        if not (args.source and args.target and args.output and args.emotion is not None):
             raise ValueError("Inference mode requires --source, --target, --emotion, and --output arguments.")
 
         # Run inference
