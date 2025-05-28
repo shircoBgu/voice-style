@@ -92,7 +92,7 @@ def train(model, emotion_classifier, dataloader,
     """
 
     os.makedirs(checkpoint_dir, exist_ok=True)
-    history = {"recon": [], "emotion": []}
+    history = {"recon": [], "emotion": [], "speaker": []}
 
     for epoch in range(1, num_epochs + 1):
         print(f"\nEpoch {epoch}/{num_epochs}")

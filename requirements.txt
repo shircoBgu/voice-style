@@ -1,25 +1,27 @@
 voice-style-project/
+├── config.json
+├── main.py
+├── requirements.txt
+├── README.md
 ├── data/
-│   ├── raw/              # Original unprocessed audio files
-│   ├── processed/        # Mel-spectrograms or features
-│   └── emotion_labels/   # CSV or JSONs with emotion labels (if needed)
-│
-├── notebooks/
-│   ├── preprocessing.ipynb       # Convert audio to mel-spectrogram
-│   └── training_experiments.ipynb
-│
 ├── models/
-│   ├── hifigan_pretrained/          # HiFi-GAN model files (checkpoint, config, etc.)
-│   └── autoVC/           # AutoVC-style encoder/decoder
-│
-├── utils/
-│   ├── audio.py          # For audio loading/saving
-│   └── mel_utils.py      # Mel-spectrogram conversion
-│
+│   ├── autoVC/
+│   │   ├── autovc.py
+│   │   ├── content_encoder.py
+│   │   ├── decoder.py
+│   │   ├── postnet.py
+│   │   ├── speaker_encoder.py
+│   ├── EmotionClassifier.py
+│   └── hifigan_pretrained/
+│       ├── config.json
+│       └── generator_v1
 ├── scripts/
-│   ├── train.py          # Training entry point
-│   └── inference.py      # Inference pipeline (style transfer)
-│
-├── requirements.txt      # List of dependencies
-├── README.md             # Project description and setup
-└── .gitignore
+│   ├── train.py
+│   ├── inference.py
+│   └── utils/
+│       ├── emotion_accuracy.py
+│       ├── mel_dataset.py
+│       ├── converter.py
+├── notebooks/
+│   └── test_autoVC.py
+└── tests/
