@@ -2,11 +2,11 @@ import argparse
 import json
 import torch
 from torch.utils.data import DataLoader
-from models.autoVC.EmotionClassifier import EmotionClassifier
+from models.EmotionClassifier import EmotionClassifier
 from models.autoVC.autovc import AutoVC
 from scripts.train import train
 from scripts.inference import inference
-from scripts.utils_scripts.mel_dataset import MelDataset
+from scripts.utils.mel_dataset import MelDataset
 
 def parse_args():
     # Argument parser for training and inference modes
