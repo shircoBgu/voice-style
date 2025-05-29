@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
 from models.autoVC.autovc import AutoVC
-from models.EmotionClassifier import EmotionClassifier
+from models.emotion_classifier import EmotionClassifier
 from scripts.utils.mel_dataset import MelDataset
 from scripts.utils.converter import VoiceConverter
 
