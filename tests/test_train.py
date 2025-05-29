@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 from models.autoVC.autovc import AutoVC
-from models.EmotionClassifier import EmotionClassifier
+from models.emotion_classifier import EmotionClassifier
 from scripts.train import train
 
 # Create dummy data

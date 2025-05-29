@@ -4,6 +4,9 @@ from torch.nn import functional as F
 from tqdm import tqdm
 import torch.optim as optim
 
+from models.autoVC.content_encoder import ContentEncoder
+from models.emotion_classifier import EmotionClassifier
+
 
 # Defines one full training epoch.
 # model: our AutoVC model
@@ -20,12 +23,9 @@ import torch.optim as optim
 
 def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_cls,
                     device, lambda_ce=0.5, lambda_spk=0.5):
-    # Puts both models into training mode.
-    model.train()
-    emotion_classifier_real.train()
 
     # Setup for adversarial training
-    content_encoder_real = ContentEncoder() #not sure we need that 
+    content_encoder_real = ContentEncoder() #not sure we need that
     emotion_classifier_real = EmotionClassifier() #not ruin the original emotion classifier we use
     content_encoder_adv = ContentEncoder()
     emotion_classifier_adv = EmotionClassifier()
@@ -33,6 +33,9 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
     optimizer_encoder = torch.optim.Adam(content_encoder_adv.parameters(), lr=1e-4)
     optimizer_classifier = torch.optim.Adam(emotion_classifier_adv.parameters(), lr=1e-4)
 
+    # Puts both models into training mode.
+    model.train()
+    emotion_classifier_real.train()
     # Initialize accumulators to track average losses across all batches.
     total_recon_loss = 0
     total_emotion_loss = 0

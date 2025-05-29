@@ -1,6 +1,6 @@
 import torch
 from models.autoVC.autovc import AutoVC
-from models.EmotionClassifier import EmotionClassifier
+from models.emotion_classifier import EmotionClassifier
 from hifigan.models import Generator
 from hifigan.env import AttrDict
 import json
