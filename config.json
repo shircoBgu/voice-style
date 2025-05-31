@@ -20,7 +20,7 @@
     "bottleneck_dim": 32,
     "emotion_embedding_dim": 128,
     "use_emotion_loss": true,
-    "num_emotions": 5
+    "num_emotions": 11
   },
   "paths": {
     "pretrained_emotion_classifier": "models/emotion_classifier.pt",
