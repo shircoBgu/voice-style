@@ -13,7 +13,7 @@ class AutoVC(nn.Module):
                  content_emb_dim=128,
                  speaker_emb_dim=128,
                  emotion_emb_dim=128,
-                 num_emotions=5,
+                 num_emotions=11,
                  bottleneck_dim=384,  # C + S + E
                  mel_dim=80):
         super(AutoVC, self).__init__()
