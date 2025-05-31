@@ -1,7 +1,7 @@
 from torch import nn
 
 class EmotionClassifier(nn.Module):
-    def __init__(self, num_classes=9):
+    def __init__(self, num_emotions=11):
         # emotion classes: angry, excited, fear, sad, surprised, frustrated, happy, disappointed, neutral
         super().__init__()
 
@@ -23,7 +23,7 @@ class EmotionClassifier(nn.Module):
             nn.Flatten(),
             nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(64, num_classes)
+            nn.Linear(64, num_emotions)
         )
 
     def forward(self, x):  # x: [B, T, 80]
