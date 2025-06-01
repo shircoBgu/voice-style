@@ -1,7 +1,9 @@
+import glob
 import os
 import torch
 from torch.nn import functional as F
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 # Defines one full training epoch.
@@ -12,6 +14,7 @@ from tqdm import tqdm
 # optimizer_cls: for the emotion classifier
 # device: usually "cuda" or "cpu"
 # lambda_ce: weight for the emotion classification loss
+# lambda_spk: weight for the speaker loss
 
 def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_cls,
                     device, lambda_ce=0.5, lambda_spk=0.5):
@@ -89,14 +92,34 @@ def train(model, emotion_classifier, dataloader,
         device: "cuda" or "cpu"
         num_epochs: number of epochs to train
         lambda_ce: weight for emotion classification loss
+        lambda_spk: weight for the speaker loss
         checkpoint_dir: directory to save model checkpoints
     """
 
     os.makedirs(checkpoint_dir, exist_ok=True)
-    history = {"recon": [], "emotion": [], "speaker": []}
+    history_path = os.path.join(checkpoint_dir, "train_history.pt")
+    if os.path.exists(history_path):
+        print(f"Loading existing training history from {history_path}")
+        history = torch.load(history_path)
+    else:
+        history = {"recon": [], "emotion": [], "speaker": []}
 
-    for epoch in range(1, num_epochs + 1):
-        print(f"\nEpoch {epoch}/{num_epochs}")
+    # === Try to resume training ===
+    autovc_ckpts = sorted(glob.glob(os.path.join(checkpoint_dir, "autovc_epoch*.pt")))
+    cls_ckpts = sorted(glob.glob(os.path.join(checkpoint_dir, "emotion_cls_epoch*.pt")))
+
+    start_epoch = 1
+    if autovc_ckpts and cls_ckpts:
+        last_autovc = autovc_ckpts[-1]
+        last_cls = cls_ckpts[-1]
+        print(f"Resuming from checkpoint: {last_autovc} and {last_cls}")
+        model.load_state_dict(torch.load(last_autovc, map_location=device))
+        emotion_classifier.load_state_dict(torch.load(last_cls, map_location=device))
+        # Extract epoch number from filename
+        start_epoch = int(last_autovc.split("epoch")[-1].split(".")[0]) + 1
+
+    for epoch in range(start_epoch, start_epoch + num_epochs):
+        print(f"\nEpoch {epoch}/{start_epoch + num_epochs - 1}")
 
         avg_recon, avg_ce, avg_spk = train_one_epoch(
             model, emotion_classifier, dataloader,
@@ -115,5 +138,32 @@ def train(model, emotion_classifier, dataloader,
         history["emotion"].append(avg_ce)
         history["speaker"].append(avg_spk)
 
-    torch.save(history, "train_history.pt")
+    torch.save(history, os.path.join(checkpoint_dir, "train_history.pt"))
+
+    # === Plot training losses ===
+    plt.figure(figsize=(12, 4))
+    plt.subplot(1, 3, 1)
+    plt.plot(history["recon"])
+    plt.title("Reconstruction Loss")
+    plt.xlabel("Epoch")
+    plt.grid(True)
+
+    plt.subplot(1, 3, 2)
+    plt.plot(history["emotion"])
+    plt.title("Emotion Loss")
+    plt.xlabel("Epoch")
+    plt.grid(True)
+
+    plt.subplot(1, 3, 3)
+    plt.plot(history["speaker"])
+    plt.title("Speaker Loss")
+    plt.xlabel("Epoch")
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(checkpoint_dir, "loss_plot.png"))
+    print(f"Training plot saved to {os.path.join(checkpoint_dir, 'loss_plot.png')}")
+    plt.savefig(os.path.join(checkpoint_dir, "loss_plot.png"))
+    plt.show()
+
     return history
