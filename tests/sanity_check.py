@@ -12,7 +12,7 @@ from scripts.utils.converter import VoiceConverter
 
 def run_sanity_check():
     # Config
-    csv_path = "/content/drive/MyDrive/voice style project/processed_dataset/iemocap_with_mels_fixedlen.csv"
+    csv_path = "/content/drive/MyDrive/voice_style_project/processed_dataset/iemocap_with_mels_fixedlen_FIXED.csv"
     batch_size = 4
     num_emotions = 5
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -28,8 +28,8 @@ def run_sanity_check():
     target_mel = mels
 
     # Initialize models
-    autovc = AutoVC(num_emotions=num_emotions).to(device)
-    emotion_cls = EmotionClassifier(num_classes=num_emotions).to(device)
+    autovc = AutoVC().to(device)
+    emotion_cls = EmotionClassifier().to(device)
 
     # Forward through AutoVC
     with torch.no_grad():
@@ -54,8 +54,7 @@ def run_sanity_check():
         speaker_loss = 1.0 - cos_sim.mean()
         print(f"✅ Dummy speaker similarity loss: {speaker_loss.item():.4f}")
 
-    config_path = os.path.join("..", "config.json")
-    converter = VoiceConverter(config_path)
+    converter = VoiceConverter("/content/drive/MyDrive/voice_style_project/voice_style_project/config.json")
     converter.load_hifigan()
 
     with torch.no_grad():

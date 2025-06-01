@@ -16,8 +16,8 @@ dataloader = DataLoader(dataset, batch_size=2)
 
 # Models
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = AutoVC(num_emotions=5).to(device)
-emotion_classifier = EmotionClassifier(num_classes=5).to(device)
+model = AutoVC().to(device)
+emotion_classifier = EmotionClassifier().to(device)
 
 # Optimizers
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
