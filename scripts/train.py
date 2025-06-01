@@ -163,7 +163,6 @@ def train(model, emotion_classifier, dataloader,
     plt.tight_layout()
     plt.savefig(os.path.join(checkpoint_dir, "loss_plot.png"))
     print(f"Training plot saved to {os.path.join(checkpoint_dir, 'loss_plot.png')}")
-    plt.savefig(os.path.join(checkpoint_dir, "loss_plot.png"))
     plt.show()
 
     return history
