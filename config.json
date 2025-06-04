@@ -1,8 +1,7 @@
 {
   "dataset": {
-    "iemocap_path": "data/IEMOCAP",
-    "vctk_path": "data/VCTK",
-    "crema_d_path": "data/CREMA-D",
+    "iemocap_path": "/content/drive/MyDrive/voice_style_project/processed_dataset/iemocap_with_mels_fixedlen_FIXED.csv",
+    "vctk_path": "/content/drive/MyDrive/voice_style_project/processed_dataset/vctk_with_mels_fixedlen_FIXED.csv",
     "sample_rate": 22050,
     "n_mels": 80,
     "segment_length": 128
