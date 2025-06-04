@@ -1,4 +1,5 @@
 import os
+from random import random
 
 import torch
 from torch.utils.data import Dataset
@@ -21,12 +22,38 @@ class MelDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
+        # phase 1
+        # row = self.df.iloc[idx]
+        # if not os.path.exists(row['mel_path']):
+        #     raise FileNotFoundError(f"Missing mel file: {row['mel_path']}")
+        # mel = np.load(row['mel_path'])    # (80, 251)
+        # mel = torch.tensor(mel.T, dtype=torch.float32) #(251,80) as train.py expected
+        # speaker_id = self.speaker2idx[row['speaker_id']]
+        # emotion_label = self.emo2idx[row['emotion_label']]
+        # # return mel, speaker_id, emotion_label
+        # return mel, mel, emotion_label  # source_mel, target_mel, emotion_label for training phase
+
+        # phase 2
         row = self.df.iloc[idx]
         if not os.path.exists(row['mel_path']):
             raise FileNotFoundError(f"Missing mel file: {row['mel_path']}")
-        mel = np.load(row['mel_path'])    # (80, 251)
-        mel = torch.tensor(mel.T, dtype=torch.float32) #(251,80) as train.py expected
-        speaker_id = self.speaker2idx[row['speaker_id']]
-        emotion_label = self.emo2idx[row['emotion_label']]
-        # return mel, speaker_id, emotion_label
-        return mel, mel, emotion_label  # source_mel, target_mel, emotion_label for training phase
+        # Source
+        src_mel = np.load(row['mel_path'])
+        src_mel = torch.tensor(src_mel.T, dtype=torch.float32)
+
+        # Target mel (random, different sample)
+        while True:
+            tgt_idx = random.randint(0, len(self.df) - 1)
+            if tgt_idx != idx:
+                break
+
+        tgt_row = self.df.iloc[tgt_idx]
+        if not os.path.exists(tgt_row['mel_path']):
+            raise FileNotFoundError(f"Missing mel file: {row['mel_path']}")
+        # Target
+        tgt_mel = np.load(tgt_row['mel_path'])
+        tgt_mel = torch.tensor(tgt_mel.T, dtype=torch.float32)
+
+        tgt_emotion = self.emo2idx[tgt_row['emotion_label']]
+
+        return src_mel, tgt_mel, tgt_emotion
