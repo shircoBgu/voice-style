@@ -33,6 +33,7 @@ class MelDataset(Dataset):
         # # return mel, speaker_id, emotion_label
         # return mel, mel, emotion_label  # source_mel, target_mel, emotion_label for training phase
 
+
         # phase 2
         row = self.df.iloc[idx]
         if not os.path.exists(row['mel_path']):

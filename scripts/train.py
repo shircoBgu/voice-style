@@ -21,7 +21,6 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
     # Puts both models into training mode.
     model.train()
     emotion_classifier.train()
-
     # Initialize accumulators to track average losses across all batches.
     total_recon_loss = 0
     total_emotion_loss = 0
