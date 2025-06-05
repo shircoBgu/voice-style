@@ -20,7 +20,7 @@
     "emotion_embedding_dim": 128,
     "use_emotion_loss": true,
     "num_emotions": 11,
-    "num_speakers": 10
+    "num_speakers": 25
   },
   "paths": {
     "pretrained_emotion_classifier": "models/emotion_classifier.pt",
