@@ -14,6 +14,7 @@ class AutoVC(nn.Module):
                  speaker_emb_dim=128,
                  emotion_emb_dim=128,
                  num_emotions=11,
+                 num_speakers=10,
                  bottleneck_dim=384,  # C + S + E
                  mel_dim=80):
         super(AutoVC, self).__init__()
@@ -29,7 +30,9 @@ class AutoVC(nn.Module):
         self.decoder = Decoder(input_dim=bottleneck_dim,
                                hidden_dim=256,
                                output_dim=mel_dim)
+
         self.emotion_embedding = nn.Embedding(num_emotions, emotion_emb_dim)
+        self.speaker_classifier = nn.Linear(speaker_emb_dim, num_speakers)
         self.postnet = Postnet()
         self.use_postnet = False
 
@@ -55,6 +58,7 @@ class AutoVC(nn.Module):
 
         # 2. Encode speaker identity
         speaker_emb = self.speaker_encoder(target_mel)  # (B, 128)
+        spk_logits = self.speaker_classifier(speaker_emb)  # (B, num_speakers)
         speaker_emb = speaker_emb.unsqueeze(1).expand(-1, content_emb.size(1), -1)  # (B, T, 128)
 
         # 3. Broadcast emotion vector over time
@@ -72,4 +76,4 @@ class AutoVC(nn.Module):
         else:
             mel_pred = mel_out
 
-        return mel_pred
+        return mel_pred, spk_logits

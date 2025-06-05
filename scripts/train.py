@@ -25,19 +25,21 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
     # Initialize accumulators to track average losses across all batches.
     total_recon_loss = 0
     total_emotion_loss = 0
+    total_speaker_cs_loss = 0
+    total_speaker_ce_loss = 0
     total_speaker_loss = 0
 
-    for source_mel, target_mel, emotion_label in tqdm(dataloader):
+    for source_mel, target_mel, emotion_label, target_speaker_id in tqdm(dataloader):
         source_mel = source_mel.to(device)  # (B, T, 80)
         target_mel = target_mel.to(device)  # (B, T, 80)
         emotion_label = emotion_label.to(device)  # (B,)
+        target_speaker_id = target_speaker_id.to(device)  # (B,)
 
         # === Forward pass ===
         # Predict the mel-spectrogram from source + speaker + emotion
-        mel_pred = model(source_mel, target_mel, emotion_label)  # (B, T, 80)
+        mel_pred, spk_logits = model(source_mel, target_mel, emotion_label)  # (B, T, 80)
 
         # === Loss: Reconstruction ===
-        # Self-supervised trick — model tries to reconstruct mel when content = speaker = emotion
         recon_loss = F.l1_loss(mel_pred, target_mel)
 
         # === Loss: Emotion classification ===
@@ -52,7 +54,9 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
 
         # Cosine similarity loss
         cos_sim = F.cosine_similarity(pred_speaker_emb, target_speaker_emb, dim=-1)  # (B,)
-        speaker_loss = 1.0 - cos_sim.mean()  # (scalar)
+        speaker_cs_loss = 1.0 - cos_sim.mean()  # (scalar)
+        speaker_ce_loss = F.cross_entropy(spk_logits, target_speaker_id)
+        speaker_loss = speaker_cs_loss + speaker_ce_loss
 
         # === Combine losses ===
         total_loss = recon_loss + lambda_ce * ce_loss + lambda_spk * speaker_loss
@@ -67,14 +71,21 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
 
         total_recon_loss += recon_loss.item()
         total_emotion_loss += ce_loss.item()
-        total_speaker_loss += speaker_loss.item()
+        total_speaker_cs_loss += speaker_cs_loss.item()
+        total_speaker_ce_loss += speaker_ce_loss.item()
+        total_speaker_loss += speaker_cs_loss.item() + speaker_ce_loss.item()
 
     avg_recon = total_recon_loss / max(len(dataloader), 1)
     avg_ce = total_emotion_loss / max(len(dataloader), 1)
+    avg_cs_spk = total_speaker_cs_loss / max(len(dataloader), 1)
+    avg_ce_spk = total_speaker_ce_loss / max(len(dataloader), 1)
     avg_spk = total_speaker_loss / max(len(dataloader), 1)
 
-    print(f"Avg Recon: {avg_recon:.4f} | Avg CE: {avg_ce:.4f} | Avg Spk: {avg_spk:.4f}")
-    return avg_recon, avg_ce, avg_spk
+    print(
+        f"Avg Recon: {avg_recon:.4f} | Avg CE: {avg_ce:.4f} | Avg CS_Spk: {avg_cs_spk:.4f}"
+        f" | Avg CE_Spk: {avg_ce_spk:.4f} | Avg Spk: {avg_spk:.4f}")
+
+    return avg_recon, avg_ce, avg_cs_spk, avg_ce_spk, avg_spk
 
 
 def train(model, emotion_classifier, dataloader,
@@ -98,11 +109,12 @@ def train(model, emotion_classifier, dataloader,
 
     os.makedirs(checkpoint_dir, exist_ok=True)
     history_path = os.path.join(checkpoint_dir, "train_history.pt")
+
     if os.path.exists(history_path):
         print(f"Loading existing training history from {history_path}")
         history = torch.load(history_path)
     else:
-        history = {"recon": [], "emotion": [], "speaker": []}
+        history = {"recon": [], "emotion": [], "speaker_ce": [], "speaker_cos": [], "speaker_total": []}
 
     # === Try to resume training ===
     autovc_ckpts = sorted(glob.glob(os.path.join(checkpoint_dir, "autovc_epoch*.pt")))
@@ -121,7 +133,7 @@ def train(model, emotion_classifier, dataloader,
     for epoch in range(start_epoch, start_epoch + num_epochs):
         print(f"\nEpoch {epoch}/{start_epoch + num_epochs - 1}")
 
-        avg_recon, avg_ce, avg_spk = train_one_epoch(
+        avg_recon, avg_ce, avg_cs_spk, avg_ce_spk, avg_spk = train_one_epoch(
             model, emotion_classifier, dataloader,
             optimizer, optimizer_cls, device,
             lambda_ce, lambda_spk
@@ -136,28 +148,48 @@ def train(model, emotion_classifier, dataloader,
         # Store loss history
         history["recon"].append(avg_recon)
         history["emotion"].append(avg_ce)
-        history["speaker"].append(avg_spk)
+        history["speaker_total"].append(avg_spk)
+        history["speaker_ce"].append(avg_ce_spk)
+        history["speaker_cos"].append(avg_cs_spk)
 
     torch.save(history, os.path.join(checkpoint_dir, "train_history.pt"))
 
     # === Plot training losses ===
-    plt.figure(figsize=(12, 4))
-    plt.subplot(1, 3, 1)
+    plt.figure(figsize=(15, 4))
+
+    plt.subplot(1, 5, 1)
     plt.plot(history["recon"])
     plt.title("Reconstruction Loss")
     plt.xlabel("Epoch")
+    plt.ylim(0, 3)
     plt.grid(True)
 
-    plt.subplot(1, 3, 2)
+    plt.subplot(1, 5, 2)
     plt.plot(history["emotion"])
     plt.title("Emotion Loss")
     plt.xlabel("Epoch")
+    plt.ylim(0, 3)
     plt.grid(True)
 
-    plt.subplot(1, 3, 3)
-    plt.plot(history["speaker"])
-    plt.title("Speaker Loss")
+    plt.subplot(1, 5, 3)
+    plt.plot(history["speaker_ce"])
+    plt.title("Speaker CE Loss")
     plt.xlabel("Epoch")
+    plt.ylim(0, 3)
+    plt.grid(True)
+
+    plt.subplot(1, 5, 4)
+    plt.plot(history["speaker_cos"])
+    plt.title("Speaker Cosine Loss")
+    plt.xlabel("Epoch")
+    plt.ylim(0, 3)
+    plt.grid(True)
+
+    plt.subplot(1, 5, 5)
+    plt.plot(history["speaker_total"])
+    plt.title("Total Speaker Loss")
+    plt.xlabel("Epoch")
+    plt.ylim(0, 3)
     plt.grid(True)
 
     plt.tight_layout()

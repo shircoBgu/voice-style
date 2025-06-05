@@ -9,9 +9,11 @@ B, T, D = 4, 100, 80  # Batch, Time, Mel-dim
 X = torch.randn(B, T, D)
 Y = torch.randn(B, T, D)
 labels = torch.randint(0, 5, (B,))
+speaker_ids = torch.randint(0, 10, (B,))  # Dummy speaker ids
+
 
 # Wrap into DataLoader
-dataset = TensorDataset(X, Y, labels)
+dataset = TensorDataset(X, Y, labels,speaker_ids)
 dataloader = DataLoader(dataset, batch_size=2)
 
 # Models
