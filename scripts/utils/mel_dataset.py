@@ -56,5 +56,4 @@ class MelDataset(Dataset):
         tgt_mel = torch.tensor(tgt_mel.T, dtype=torch.float32)
 
         tgt_emotion = self.emo2idx[tgt_row['emotion_label']]
-        print(f"Source speaker: {src_speaker}, Target speaker: {tgt_row['speaker_id']}")
         return src_mel, tgt_mel, tgt_emotion
