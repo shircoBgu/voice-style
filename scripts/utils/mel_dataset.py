@@ -40,20 +40,21 @@ class MelDataset(Dataset):
         # Source
         src_mel = np.load(row['mel_path'])
         src_mel = torch.tensor(src_mel.T, dtype=torch.float32)
+        src_speaker = row['speaker_id']
 
         # Target mel (random, different sample)
         while True:
             tgt_idx = random.randint(0, len(self.df) - 1)
-            if tgt_idx != idx:
+            tgt_row = self.df.iloc[tgt_idx]
+            if tgt_row['speaker_id'] != src_speaker:
                 break
 
-        tgt_row = self.df.iloc[tgt_idx]
         if not os.path.exists(tgt_row['mel_path']):
-            raise FileNotFoundError(f"Missing mel file: {row['mel_path']}")
+            raise FileNotFoundError(f"Missing mel file: {tgt_row['mel_path']}")
         # Target
         tgt_mel = np.load(tgt_row['mel_path'])
         tgt_mel = torch.tensor(tgt_mel.T, dtype=torch.float32)
 
         tgt_emotion = self.emo2idx[tgt_row['emotion_label']]
-
+        print(f"Source speaker: {src_speaker}, Target speaker: {tgt_row['speaker_id']}")
         return src_mel, tgt_mel, tgt_emotion
