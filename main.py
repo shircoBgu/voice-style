@@ -18,6 +18,8 @@ def parse_args():
     parser.add_argument('--target', type=str, help='Path to target speaker audio')
     parser.add_argument('--emotion', type=int, help='Emotion label (0-4)')
     parser.add_argument('--output', type=str, help='Path to save converted audio')
+    parser.add_argument('--dataset', type=str, help='Dataset ID to train on (e.g., IEMOCAP, VCTK, CREAMD)')
+
     return parser.parse_args()
 
 def main():
@@ -33,16 +35,18 @@ def main():
     # === TRAINING MODE ===
     if args.mode == 'train':
         # Load dataset path and prepare dataloader
-        csv_path = config["dataset"].get("iemocap_path")
-        dataset = MelDataset(csv_path)
+        csv_path = config["dataset"].get("merged_path")
+        dataset = MelDataset(csv_path, dataset_filter=args.dataset)
         dataloader = DataLoader(dataset,
                                 batch_size=config["training"]["batch_size"],
                                 shuffle=True,
                                 drop_last=True)
 
         # Initialize models
-        model = AutoVC().to(device)
-        emotion_classifier = EmotionClassifier(num_emotions=config["model"]["num_emotions"]).to(device)
+        num_speakers = len(dataset.speaker2idx)
+        num_emotions = len(dataset.emo2idx)
+        model = AutoVC(num_speakers=num_speakers).to(device)
+        emotion_classifier = EmotionClassifier(num_emotions=num_emotions).to(device)
 
         # Initialize optimizers
         lr = config["training"]["learning_rate"]

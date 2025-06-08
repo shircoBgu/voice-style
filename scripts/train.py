@@ -141,8 +141,20 @@ def train(model, emotion_classifier, dataloader,
         print(f"Recon: {avg_recon:.4f} | Emotion: {avg_ce:.4f} | Speaker: {avg_spk:.4f}")
 
         # Save model checkpoints
-        torch.save(model.state_dict(), os.path.join(checkpoint_dir, f"autovc_epoch{epoch}.pt"))
-        torch.save(emotion_classifier.state_dict(), os.path.join(checkpoint_dir, f"emotion_cls_epoch{epoch}.pt"))
+        autovc_path = os.path.join(checkpoint_dir, f"autovc_epoch{epoch}.pt")
+        emotion_cls_path = os.path.join(checkpoint_dir, f"emotion_cls_epoch{epoch}.pt")
+        combined_path = os.path.join(checkpoint_dir, f"checkpoint_epoch{epoch}.pt")
+
+        torch.save(model.state_dict(), autovc_path)
+        torch.save(emotion_classifier.state_dict(), emotion_cls_path)
+
+        # Save combined checkpoint with mappings
+        torch.save({
+            "model_state": model.state_dict(),
+            "emotion_classifier_state": emotion_classifier.state_dict(),
+            "speaker2idx": dataloader.dataset.speaker2idx,
+            "emo2idx": dataloader.dataset.emo2idx,
+        }, combined_path)
 
         # Store loss history
         history["recon"].append(avg_recon)

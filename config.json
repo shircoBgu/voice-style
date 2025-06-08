@@ -4,7 +4,13 @@
     "vctk_path": "/content/drive/MyDrive/voice_style_project/processed_dataset/vctk_with_mels_fixedlen_FIXED.csv",
     "sample_rate": 22050,
     "n_mels": 80,
-    "segment_length": 128
+    "segment_length": 128,
+    "merged_path": "/content/drive/MyDrive/voice_style_project/processed_dataset/merged_all_datasets.csv",
+    "datasets": [
+      "IEMOCAP",
+      "CREAMD",
+      "VCTK"
+    ]
   },
   "training": {
     "batch_size": 16,
@@ -18,9 +24,7 @@
     "encoder_hidden_dim": 256,
     "bottleneck_dim": 32,
     "emotion_embedding_dim": 128,
-    "use_emotion_loss": true,
-    "num_emotions": 11,
-    "num_speakers": 25
+    "use_emotion_loss": true
   },
   "paths": {
     "pretrained_emotion_classifier": "models/emotion_classifier.pt",
