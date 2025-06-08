@@ -16,6 +16,12 @@ import matplotlib.pyplot as plt
 # lambda_ce: weight for the emotion classification loss
 # lambda_spk: weight for the speaker loss
 
+def extract_epoch_num(filename):
+    try:
+        return int(filename.split("epoch")[-1].split(".")[0])
+    except:
+        return -1  # fallback
+
 def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_cls,
                     device, lambda_ce=0.5, lambda_spk=0.5):
     # Puts both models into training mode.
@@ -116,8 +122,14 @@ def train(model, emotion_classifier, dataloader,
         history = {"recon": [], "emotion": [], "speaker_ce": [], "speaker_cos": [], "speaker_total": []}
 
     # === Try to resume training ===
-    autovc_ckpts = sorted(glob.glob(os.path.join(checkpoint_dir, "autovc_epoch*.pt")))
-    cls_ckpts = sorted(glob.glob(os.path.join(checkpoint_dir, "emotion_cls_epoch*.pt")))
+    cls_ckpts = sorted(
+    glob.glob(os.path.join(checkpoint_dir, "emotion_cls_epoch*.pt")),
+    key=extract_epoch_num
+    )
+    autovc_ckpts = sorted(
+    glob.glob(os.path.join(checkpoint_dir, "autovc_epoch*.pt")),
+    key=extract_epoch_num
+    )
 
     start_epoch = 1
     if autovc_ckpts and cls_ckpts:
