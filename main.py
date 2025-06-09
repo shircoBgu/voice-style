@@ -19,6 +19,8 @@ def parse_args():
     parser.add_argument('--emotion', type=int, help='Emotion label (0-4)')
     parser.add_argument('--output', type=str, help='Path to save converted audio')
     parser.add_argument('--dataset', type=str, help='Dataset ID to train on (e.g., IEMOCAP, VCTK, CREAMD)')
+    parser.add_argument('--use_npy', action='store_true',
+                        help='If set, source and target are .npy mel spectrograms instead of .wav')
 
     return parser.parse_args()
 
@@ -72,7 +74,8 @@ def main():
                   source_path=args.source,
                   target_path=args.target,
                   emotion_label=args.emotion,
-                  output_path=args.output)
+                  output_path=args.output,
+                  use_npy=args.use_npy)
 
 if __name__ == "__main__":
     main()
