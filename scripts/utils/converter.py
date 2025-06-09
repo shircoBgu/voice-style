@@ -13,17 +13,13 @@ class VoiceConverter:
     def __init__(self, config_path="config.json"):
         with open(config_path) as f:
             self.config = json.load(f)
-
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.emotion_map = {
-            0: "neutral", 1: "happy", 2: "sad", 3: "angry", 4: "surprised"
-        }
+        self.emo2idx = None
+        self.speaker2idx = None
         self.autovc_model = None
         self.hifigan_model = None
 
     def load_autovc(self, model_class, checkpoint_path=None):
-        model = model_class().to(self.device)
-
         if checkpoint_path is None:
             ckpt_dir = self.config["training"].get("checkpoint_dir", "checkpoints")
             candidates = glob.glob(os.path.join(ckpt_dir, "*.pt"))
@@ -33,9 +29,17 @@ class VoiceConverter:
 
         print(f"Loading AutoVC from {checkpoint_path}")
         state = torch.load(checkpoint_path, map_location=self.device)
-        model.load_state_dict(state if isinstance(state, dict) else state['model_state_dict'])
-        model.eval()
-        self.autovc_model = model
+        if isinstance(state, dict) and "model_state" in state:
+            num_emotions = len(state.get("emo2idx", {}))
+            num_speakers = len(state.get("speaker2idx", {}))
+            model = model_class(num_emotions=num_emotions, num_speakers=num_speakers).to(self.device)
+            model.load_state_dict(state["model_state"])
+            model.eval()
+            self.emo2idx = state.get("emo2idx", {})
+            self.speaker2idx = state.get("speaker2idx", {})
+            self.autovc_model = model
+        else:
+            raise ValueError("Checkpoint missing 'model_state'")
 
     def load_hifigan(self):
         hifigan_dir = self.config["paths"]["pretrained_hifigan"]
@@ -82,15 +86,31 @@ class VoiceConverter:
             mel = mel[:target_len] if mel.size(0) > target_len else torch.cat(
                 [mel, mel[-1:].repeat(target_len - mel.size(0), 1)]
             )
-
         return mel.unsqueeze(0).to(self.device)
 
-    def convert(self, source_path, target_path, emotion_label, output_path):
+    def load_mel_from_npy(self, path, target_len=None):
+        """
+        Load a precomputed mel spectrogram saved as (80, T) .npy file and prepare it for inference.
+        Returns: Tensor of shape (1, T, 80)
+        """
+        mel = np.load(path)  # shape: (80, T)
+        mel = torch.tensor(mel.T, dtype=torch.float32)  # Transpose to (T, 80)
+
+        if target_len:
+            mel = mel[:target_len] if mel.size(0) > target_len else torch.cat(
+                [mel, mel[-1:].repeat(target_len - mel.size(0), 1)]
+            )
+
+        return mel.unsqueeze(0).to(self.device)  # shape: (1, T, 80)
+
+    def convert(self, source_path, target_path, emotion_label, output_path, use_npy=False):
         if not all([self.autovc_model, self.hifigan_model]):
             raise RuntimeError("Models not loaded")
 
-        source_mel = self.load_audio_as_mel(source_path)
-        target_mel = self.load_audio_as_mel(target_path, target_len=source_mel.shape[1])
+        load_mel = self.load_mel_from_npy if use_npy else self.load_audio_as_mel
+        source_mel = load_mel(source_path)
+        target_mel = load_mel(target_path, target_len=source_mel.shape[1])
+
         emotion_tensor = torch.tensor([emotion_label], dtype=torch.long).to(self.device)
 
         with torch.no_grad():

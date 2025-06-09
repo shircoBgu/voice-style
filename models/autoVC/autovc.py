@@ -7,15 +7,14 @@ from models.autoVC.decoder import Decoder
 
 
 class AutoVC(nn.Module):
-    def __init__(self,
+    def __init__(self, num_emotions,
+                 num_speakers,
                  content_dim=80,
                  speaker_dim=80,
                  content_emb_dim=128,
                  speaker_emb_dim=128,
                  emotion_emb_dim=128,
-                 num_emotions=11,
-                 num_speakers=25,
-                 bottleneck_dim=384, # C + S + E
+                 bottleneck_dim=384,  # C + S + E
                  mel_dim=80):
         super(AutoVC, self).__init__()
 
