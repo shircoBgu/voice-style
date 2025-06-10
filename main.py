@@ -8,6 +8,7 @@ from scripts.train import train
 from scripts.inference import inference
 from scripts.utils.mel_dataset import MelDataset
 
+
 def parse_args():
     # Argument parser for training and inference modes
     parser = argparse.ArgumentParser(description="Voice Style Transfer with Emotion Conditioning")
@@ -23,6 +24,7 @@ def parse_args():
                         help='If set, source and target are .npy mel spectrograms instead of .wav')
 
     return parser.parse_args()
+
 
 def main():
     args = parse_args()
@@ -47,7 +49,7 @@ def main():
         # Initialize models
         num_speakers = len(dataset.speaker2idx)
         num_emotions = len(dataset.emo2idx)
-        model = AutoVC(num_speakers=num_speakers).to(device)
+        model = AutoVC(num_emotions=num_emotions, num_speakers=num_speakers).to(device)
         emotion_classifier = EmotionClassifier(num_emotions=num_emotions).to(device)
 
         # Initialize optimizers
@@ -76,6 +78,7 @@ def main():
                   emotion_label=args.emotion,
                   output_path=args.output,
                   use_npy=args.use_npy)
+
 
 if __name__ == "__main__":
     main()
