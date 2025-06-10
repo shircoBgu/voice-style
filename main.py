@@ -16,7 +16,7 @@ def parse_args():
     parser.add_argument('--config', type=str, default='config.json', help='Path to config file')
     parser.add_argument('--source', type=str, help='Path to source audio')
     parser.add_argument('--target', type=str, help='Path to target speaker audio')
-    parser.add_argument('--emotion', type=int, help='Emotion label (0-4)')
+    parser.add_argument('--emotion', type=str, help='Emotion label')
     parser.add_argument('--output', type=str, help='Path to save converted audio')
     parser.add_argument('--dataset', type=str, help='Dataset ID to train on (e.g., IEMOCAP, VCTK, CREAMD)')
     parser.add_argument('--use_npy', action='store_true',
