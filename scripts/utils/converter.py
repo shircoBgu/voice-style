@@ -10,9 +10,8 @@ from hifigan.env import AttrDict
 
 
 class VoiceConverter:
-    def __init__(self, config_path="config.json"):
-        with open(config_path) as f:
-            self.config = json.load(f)
+    def __init__(self, config):
+        self.config = config
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.emo2idx = None
         self.speaker2idx = None
