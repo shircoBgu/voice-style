@@ -15,12 +15,11 @@ def inference(config, source_path, target_path, emotion_label, output_path, use_
         target_path (str): Path to target speaker audio file.
         emotion_label (str): Target emotion label.
         output_path (str): Path to save the converted audio.
-        use_npy (bool): Whether input files are mel spectrograms (npy)
+        use_npy (bool): Whether input files are mel spectograms (npy)
     """
     # Initialize the voice converter
-
     converter = VoiceConverter(config)
-    converter.load_autovc()  # Load trained AutoVC model
+    converter.load_autovc(model_class=AutoVC)  # Load trained AutoVC model
     converter.load_hifigan()  # Load HiFi-GAN vocoder
     if isinstance(emotion_label, str):
         try:
@@ -34,5 +33,5 @@ def inference(config, source_path, target_path, emotion_label, output_path, use_
         target_path=target_path,
         emotion_label=emotion_label,
         output_path=output_path,
-        use_npy = use_npy
+        use_npy=use_npy
     )
