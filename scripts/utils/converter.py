@@ -24,7 +24,7 @@ class VoiceConverter:
             candidates = glob.glob(os.path.join(ckpt_dir, "*.pt"))
             if not candidates:
                 raise FileNotFoundError("No AutoVC checkpoint found")
-            checkpoint_path = sorted(candidates)[-1]
+            checkpoint_path = "models/checkpoints/checkpoint_epoch210.pt"
 
         print(f"Loading AutoVC from {checkpoint_path}")
         state = torch.load(checkpoint_path, map_location=self.device)
@@ -113,7 +113,7 @@ class VoiceConverter:
         emotion_tensor = torch.tensor([emotion_label], dtype=torch.long).to(self.device)
 
         with torch.no_grad():
-            mel_out = self.autovc_model(source_mel, target_mel, emotion_tensor)
+            mel_out, _ = self.autovc_model(source_mel, target_mel, emotion_tensor)
             audio = self.hifigan_model(mel_out.transpose(1, 2)).squeeze().cpu().numpy()
             audio = audio / np.max(np.abs(audio))
             audio = np.int16(audio * 32767)
