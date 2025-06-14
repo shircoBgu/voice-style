@@ -4,6 +4,7 @@ import json
 import torch
 import torchaudio
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.io.wavfile import write
 from hifigan.models import Generator
 from hifigan.env import AttrDict
@@ -24,7 +25,7 @@ class VoiceConverter:
             candidates = glob.glob(os.path.join(ckpt_dir, "*.pt"))
             if not candidates:
                 raise FileNotFoundError("No AutoVC checkpoint found")
-            checkpoint_path = "models/checkpoints/checkpoint_epoch210.pt"
+            checkpoint_path = "models/checkpoints/checkpoint_epoch610.pt"
 
         print(f"Loading AutoVC from {checkpoint_path}")
         state = torch.load(checkpoint_path, map_location=self.device)
@@ -115,9 +116,27 @@ class VoiceConverter:
         with torch.no_grad():
             mel_out, _ = self.autovc_model(source_mel, target_mel, emotion_tensor)
             audio = self.hifigan_model(mel_out.transpose(1, 2)).squeeze().cpu().numpy()
+            # === Plot and Save AutoVC Output Mel-Spectrogram ===
+            mel_out_np = mel_out.squeeze(0).cpu().numpy().T  # Shape: (80, T)
+            plt.figure(figsize=(10, 4))
+            plt.imshow(mel_out_np, aspect='auto', origin='lower')
+            plt.title("Mel-Spectrogram Output from AutoVC")
+            plt.colorbar()
+            plt.tight_layout()
+
+            # Save to file (since we're in script mode)
+            plot_path = os.path.join(os.path.dirname(output_path), "autovc_output_mel.png")
+            plt.savefig(plot_path)
+            print(f"Saved AutoVC mel-spectrogram to {plot_path}")
             audio = audio / np.max(np.abs(audio))
             audio = np.int16(audio * 32767)
 
-
             write(output_path, self.config["dataset"]["sample_rate"], audio)
             print(f"Audio saved to {output_path}")
+
+            print("AutoVC Output Mel Stats:")
+            print("  Min:", mel_out.min().item())
+            print("  Max:", mel_out.max().item())
+            print("  Mean:", mel_out.mean().item())
+            print("  Std:", mel_out.std().item())
+            print("Emotion tensor used:", emotion_tensor)
