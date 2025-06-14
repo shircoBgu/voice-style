@@ -56,7 +56,7 @@ class MelDataset(Dataset):
             tgt_utt = tgt_row['utterance_id']
 
             if src_speaker != tgt_spk and src_utt != tgt_utt:
-                print(f"SRC: {src_speaker}/{src_utt} → TGT: {tgt_spk}/{tgt_utt}")
+                # print(f"SRC: {src_speaker}/{src_utt} → TGT: {tgt_spk}/{tgt_utt}")
                 break
 
         if not os.path.exists(tgt_row['mel_path']):
