@@ -33,7 +33,7 @@ class AutoVC(nn.Module):
         self.emotion_embedding = nn.Embedding(num_emotions, emotion_emb_dim)
         self.speaker_classifier = nn.Linear(speaker_emb_dim, num_speakers)
         self.postnet = Postnet()
-        self.use_postnet = False
+        self.use_postnet = True
 
     def forward(self, source_mel, target_mel, emotion_label):
         """
@@ -69,10 +69,17 @@ class AutoVC(nn.Module):
 
         # 5. Decode to mel-spectrogram
         mel_out = self.decoder(bottleneck)  # (B, T, 80)
+        print("Decoder raw output std:", mel_out.std().item())
 
         if self.use_postnet:
-            mel_pred = mel_out + self.postnet(mel_out)  # residual
+            mel_post = mel_out + self.postnet(mel_out)
+            print("Postnet-enhanced output std:", mel_post.std().item())
+            mel_pred = mel_post
         else:
             mel_pred = mel_out
 
+        print("Bottleneck stats:", bottleneck.mean().item(), bottleneck.std().item())
+        print("content_emb std:", content_emb.std().item())
+        print("speaker_emb std:", speaker_emb.std().item())
+        print("emotion_vec std:", emotion_vec.std().item())
         return mel_pred, spk_logits
