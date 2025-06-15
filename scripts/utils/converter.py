@@ -9,6 +9,12 @@ from scipy.io.wavfile import write
 from hifigan.models import Generator
 from hifigan.env import AttrDict
 
+def extract_epoch_num(filename):
+    try:
+        return int(filename.split("epoch")[-1].split(".")[0])
+    except:
+        return -1  # fallback
+
 
 class VoiceConverter:
     def __init__(self, config):
@@ -22,10 +28,11 @@ class VoiceConverter:
     def load_autovc(self, model_class, checkpoint_path=None):
         if checkpoint_path is None:
             ckpt_dir = self.config["training"].get("checkpoint_dir", "checkpoints")
-            candidates = glob.glob(os.path.join(ckpt_dir, "*.pt"))
+            candidates = glob.glob(os.path.join(ckpt_dir, "checkpoint_epoch*.pt"))
             if not candidates:
                 raise FileNotFoundError("No AutoVC checkpoint found")
-            checkpoint_path = "models/checkpoints/checkpoint_epoch610.pt"
+        candidates = sorted(candidates, key=extract_epoch_num)
+        checkpoint_path = candidates[-1]
 
         print(f"Loading AutoVC from {checkpoint_path}")
         state = torch.load(checkpoint_path, map_location=self.device)
