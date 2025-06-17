@@ -53,8 +53,15 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
         ce_loss = F.cross_entropy(logits, emotion_label)
 
         # === Speaker Consistency Loss ===
+        # with torch.no_grad():
+        #     target_speaker_emb = model.speaker_encoder(target_mel)  # (B, D)
+        use_pred_for_ref = torch.rand(1).item() < 0.3
+        ref_mel = mel_pred.detach() if use_pred_for_ref else target_mel
+        if use_pred_for_ref:
+            ref_mel += 0.01 * torch.randn_like(ref_mel)
         with torch.no_grad():
-            target_speaker_emb = model.speaker_encoder(target_mel)  # (B, D)
+            target_speaker_emb = model.speaker_encoder(ref_mel)
+
         pred_speaker_emb = model.speaker_encoder(mel_pred.detach())  # (B, D)
 
         # Cosine similarity loss

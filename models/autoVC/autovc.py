@@ -4,6 +4,8 @@ from models.autoVC.content_encoder import ContentEncoder
 from models.autoVC.postnet import Postnet
 from models.autoVC.speaker_encoder import SpeakerEncoder
 from models.autoVC.decoder import Decoder
+from models.autoVC.pretrained_speaker_encoder import PretrainedSpeakerEncoder
+
 
 
 class AutoVC(nn.Module):
@@ -12,19 +14,25 @@ class AutoVC(nn.Module):
                  content_dim=80,
                  speaker_dim=80,
                  content_emb_dim=128,
-                 speaker_emb_dim=128,
+                 speaker_emb_dim=256,
                  emotion_emb_dim=128,
-                 bottleneck_dim=384,  # C + S + E
+                 bottleneck_dim=512,  # C + S + E
                  mel_dim=80):
         super(AutoVC, self).__init__()
+
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # ← hardcoded with fallback
 
         self.content_encoder = ContentEncoder(input_dim=content_dim,
                                               hidden_dim=256,
                                               output_dim=content_emb_dim)
 
-        self.speaker_encoder = SpeakerEncoder(input_dim=speaker_dim,
-                                              hidden_dim=512,
-                                              output_dim=speaker_emb_dim)
+        # self.speaker_encoder = SpeakerEncoder(input_dim=speaker_dim,
+        #                                       hidden_dim=512,
+        #                                       output_dim=speaker_emb_dim)
+
+        self.speaker_encoder = PretrainedSpeakerEncoder(ckpt_path="3000000-BL.ckpt", device=device)
+        for param in self.speaker_encoder.parameters():
+            param.requires_grad = False
 
         self.decoder = Decoder(input_dim=bottleneck_dim,
                                hidden_dim=256,
