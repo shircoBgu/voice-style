@@ -22,6 +22,8 @@ def parse_args():
     parser.add_argument('--dataset', type=str, help='Dataset ID to train on (e.g., IEMOCAP, VCTK, CREAMD)')
     parser.add_argument('--use_npy', action='store_true',
                         help='If set, source and target are .npy mel spectrograms instead of .wav')
+    parser.add_argument('--vocoder', type=str, choices=['hifigan', 'wavenet'], default='hifigan',
+                        help='Which vocoder to use for waveform generation')
 
     return parser.parse_args()
 
@@ -72,12 +74,14 @@ def main():
             raise ValueError("Inference mode requires --source, --target, --emotion, and --output arguments.")
 
         # Run inference
-        inference(config=config,
-                  source_path=args.source,
-                  target_path=args.target,
-                  emotion_label=args.emotion,
-                  output_path=args.output,
-                  use_npy=args.use_npy)
+
+    inference(config=config,
+              source_path=args.source,
+              target_path=args.target,
+              emotion_label=args.emotion,
+              output_path=args.output,
+              vocoder_type=args.vocoder,
+              use_npy=args.use_npy)
 
 
 if __name__ == "__main__":

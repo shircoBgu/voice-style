@@ -5,7 +5,7 @@ from scripts.utils.converter import VoiceConverter
 from models.autoVC.autovc import AutoVC
 
 
-def inference(config, source_path, target_path, emotion_label, output_path, use_npy=False):
+def inference(config, source_path, target_path, emotion_label, output_path,vocoder_type, use_npy=False):
     """
     Perform voice conversion given config and input/output paths.
 
@@ -20,7 +20,13 @@ def inference(config, source_path, target_path, emotion_label, output_path, use_
     # Initialize the voice converter
     converter = VoiceConverter(config)
     converter.load_autovc(model_class=AutoVC)  # Load trained AutoVC model
-    converter.load_hifigan()  # Load HiFi-GAN vocoder
+    if vocoder_type == "hifigan":
+        converter.load_hifigan()
+    elif vocoder_type == "wavenet":
+        converter.load_wavenet()
+    else:
+        raise ValueError(f"Unsupported vocoder type: {vocoder_type}")
+
     if isinstance(emotion_label, str):
         try:
             emotion_label = converter.emo2idx[emotion_label]

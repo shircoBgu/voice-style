@@ -29,6 +29,7 @@
   "paths": {
     "pretrained_emotion_classifier": "models/emotion_classifier.pt",
     "pretrained_hifigan": "models/hifigan_pretrained",
+    "pretrained_wavenet": "models/wavenet_pretrained",
     "output_dir": "outputs"
   }
 }
