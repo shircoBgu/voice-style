@@ -107,4 +107,4 @@ class AutoVC(nn.Module):
         # print("content_emb std:", content_emb.std().item())
         # print("speaker_emb std:", speaker_emb.std().item())
         # print("emotion_vec std:", emotion_vec.std().item())
-        return mel_pred, mel_out, torch.cat(codes, dim=-1), spk_logits
+        return mel_pred, mel_out, torch.cat(codes, dim=-1), spk_logits, src_speaker_emb, tgt_speaker_emb
