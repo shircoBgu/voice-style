@@ -2,6 +2,8 @@
 
 import torch
 import torch.nn as nn
+from models.autoVC.blocks import ConvNorm  # uses Xavier init
+
 
 class Postnet(nn.Module):
     """
@@ -20,7 +22,7 @@ class Postnet(nn.Module):
 
         # first layer 80 -> 512
         layers.append(nn.Sequential(
-            nn.Conv1d(mel_dim, hidden_dim, kernel_size=kernel_size, padding=kernel_size // 2),
+            ConvNorm(mel_dim, hidden_dim, kernel_size=kernel_size, padding=2, w_init_gain='tanh'),
             nn.BatchNorm1d(hidden_dim),
             nn.Tanh()
         ))
@@ -28,14 +30,14 @@ class Postnet(nn.Module):
         # other 3 layers 512 -> 512
         for _ in range(3):
             layers.append(nn.Sequential(
-                nn.Conv1d(hidden_dim, hidden_dim, kernel_size=kernel_size, padding=kernel_size // 2),
+                ConvNorm(hidden_dim, hidden_dim, kernel_size=kernel_size, padding=2, w_init_gain='tanh'),
                 nn.BatchNorm1d(hidden_dim),
                 nn.Tanh()
             ))
 
         # Final layer: 512 → 80, no activation
         layers.append(nn.Sequential(
-            nn.Conv1d(hidden_dim, mel_dim, kernel_size=kernel_size, padding=kernel_size // 2),
+            ConvNorm(hidden_dim, mel_dim, kernel_size=kernel_size, padding=2, w_init_gain='linear'),
             nn.BatchNorm1d(mel_dim)
         ))
 
@@ -44,6 +46,8 @@ class Postnet(nn.Module):
     def forward(self, x):
         """
         x: (B, T, 80) — decoder output
+        Returns:
+            residual: (B, T, 80) — postnet output to be added to decoder output
         """
         x = x.transpose(1, 2)  # (B, 80, T)
         for layer in self.layers[:-1]:

@@ -1,51 +1,74 @@
 # models/content_encoder.py
 # Content encoder: bidirectional LSTM → FC
+from models.autoVC.blocks import ConvNorm  # uses Xavier init with gain
+
 
 import torch
 import torch.nn as nn
 
-
-class ContentEncoder(nn.Module):
-    """
-    Based on AutoVC encoder:
+"""
+Based on AutoVC encoder:
     - 3 Conv1D layers with InstanceNorm
     - 1 Bidirectional LSTM
-    - Final Linear projection
-    """
+"""
 
-    def __init__(self, input_dim=80, hidden_dim=256, output_dim=128):
+
+class ContentEncoder(nn.Module):
+    def __init__(self, speaker_dim, dim_neck=32, freq=32):
         super(ContentEncoder, self).__init__()
+        self.freq = freq
+        self.dim_neck = dim_neck
 
-        # This is a stack of 3 Conv1D layers, each followed by:
-        # - InstanceNorm1d: normalizes across frequency channels (unlike BatchNorm)
-        # - ReLU: non-linearity
-        self.conv = nn.Sequential(
-            nn.Conv1d(input_dim, hidden_dim, kernel_size=5, stride=1, padding=2),
-            nn.InstanceNorm1d(hidden_dim),
+        # Input: (80 + speaker_dim) channels
+        in_channels = 80 + speaker_dim
+
+        self.convs = nn.Sequential(
+            ConvNorm(in_channels, 512, kernel_size=5, padding=2),
+            nn.BatchNorm1d(512),
             nn.ReLU(),
-
-            nn.Conv1d(hidden_dim, hidden_dim, kernel_size=5, stride=1, padding=2),
-            nn.InstanceNorm1d(hidden_dim),
+            ConvNorm(512, 512, kernel_size=5, padding=2),
+            nn.BatchNorm1d(512),
             nn.ReLU(),
-
-            nn.Conv1d(hidden_dim, hidden_dim, kernel_size=5, stride=1, padding=2),
-            nn.InstanceNorm1d(hidden_dim),
+            ConvNorm(512, 512, kernel_size=5, padding=2),
+            nn.BatchNorm1d(512),
             nn.ReLU()
         )
 
-        # A bidirectional LSTM processes each time step, both forward and backward in time.
-        self.lstm = nn.LSTM(hidden_dim, hidden_dim, num_layers=1,
-                            batch_first=True, bidirectional=True)
+        self.lstm = nn.LSTM(input_size=512,
+                            hidden_size=dim_neck,
+                            num_layers=2,
+                            batch_first=True,
+                            bidirectional=True)
 
-        # This projects the LSTM output to a lower-dimensional content embedding
-        self.linear = nn.Linear(hidden_dim * 2, output_dim)
+    def forward(self, mel, speaker_emb):
+        """
+        mel: (B, T, 80)
+        speaker_emb: (B, speaker_dim)
+        """
+        B, T, _ = mel.shape
 
-    def forward(self, x):  # x is a mel-spectrogram tensor of shape (B, T, 80)
-        x = x.transpose(1, 2)  # (B, T, 80) → (B, 80, T) Prep for Conv1D
-        x = self.conv(x)  # (B, 80, T) → (B, H, T) Extract local time-frequency patterns
-        x = x.transpose(1, 2)  # (B, H, T) → (B, T, H) Prep for LSTM
+        # Expand speaker embedding to (B, T, speaker_dim)
+        spk_expanded = speaker_emb.unsqueeze(1).expand(-1, T, -1)
 
-        out, _ = self.lstm(x)  # → (B, T, 2*H) Learn temporal dependencies (bi-dir)
-        out = self.linear(out)  # → (B, T, output_dim) Compress to bottleneck dimension
+        x = torch.cat([mel, spk_expanded], dim=-1)  # (B, T, 80 + speaker_dim)
+        x = x.transpose(1, 2)  # (B, 80+spk, T)
+        x = self.convs(x)  # (B, 512, T)
+        x = x.transpose(1, 2)  # (B, T, 512)
 
-        return out
+        self.lstm.flatten_parameters()
+        outputs, _ = self.lstm(x)  # (B, T, 2*dim_neck)
+
+        # Split forward and backward
+        out_forward = outputs[:, :, :self.dim_neck]  # (B, T, dim_neck)
+        out_backward = outputs[:, :, self.dim_neck:]  # (B, T, dim_neck)
+
+        codes = []
+        for i in range(0, T, self.freq):
+            if i + self.freq <= T:
+                code = torch.cat(
+                    (out_forward[:, i + self.freq - 1, :], out_backward[:, i, :]),
+                    dim=-1
+                )  # (B, 2*dim_neck)
+                codes.append(code)
+
+        return codes  # list of (B, 2*dim_neck)
