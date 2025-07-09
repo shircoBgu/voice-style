@@ -50,5 +50,5 @@ class Decoder(nn.Module):
         x = x.transpose(1, 2)  # back to (B, T, H)
 
         x, _ = self.lstm2(x)  # (B, T, 1024)
-        mel_out = self.proj(x)  # (B, T, 80)
+        mel_out = self.linear (x)  # (B, T, 80)
         return mel_out
