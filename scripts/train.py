@@ -5,7 +5,7 @@ import torch
 from torch.nn import functional as F
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import numpy as np
+from utils.emotion_utils import extract_emotion_embedding
 
 
 # Defines one full training epoch.
@@ -74,17 +74,22 @@ def train_one_epoch(model, dataloader, optimizer,
     total_recon_loss_post = 0
     total_content_loss = 0
 
-    for source_mel, target_mel, target_speaker_id in tqdm(dataloader):
+    for source_mel, target_mel, target_emotion_id, target_speaker_id, src_wav_path, tgt_wav_path in tqdm(dataloader):
         source_mel = source_mel.to(device)  # (B, T, 80)
         target_mel = target_mel.to(device)  # (B, T, 80)
+        emotion_embeds = torch.stack([
+            extract_emotion_embedding(wav_path) for wav_path in src_wav_path
+        ]).to(device)  # shape: (B, 64) or (B, 128) depending on emotion2vec model
         # emotion_label = emotion_label.to(device)  # (B,)
         target_speaker_id = target_speaker_id.to(device)  # (B,)
 
         # === Forward pass ===
         # Predict the mel-spectrogram from source + speaker + emotion
-        mel_pred_post, mel_pred, content_emb, spk_logits, src_spk_emb, trg_spk_emb = model(source_mel,
-                                                                                           target_mel)  # (B, T, 80)
-
+        mel_pred_post, mel_pred, content_emb, spk_logits, src_spk_emb, trg_spk_emb = model(
+            source_mel, target_mel, emotion_embedding=emotion_embeds
+        )
+        emotion_pred = extract_emotion_embedding(predicted_wav_path)
+        L_emo = F.l1_loss(emotion_pred, emotion_embed_batch)
         # =================================================test=====================================
         if global_step % 20 == 0:
             plot_mel_comparison(
@@ -259,4 +264,3 @@ def train(model, dataloader,
     plt.show()
 
     return history
-

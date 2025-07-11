@@ -41,7 +41,7 @@ class AutoVC(nn.Module):
         self.postnet = Postnet()
         self.use_postnet = True
 
-    def forward(self, source_mel, target_mel, emotion_label):
+    def forward(self, source_mel, target_mel, emotion_embedding=None, emotion_label=None):
         """
         Forward pass of the AutoVC model.
 
@@ -86,7 +86,13 @@ class AutoVC(nn.Module):
 
         # 3. 4. Expand target speaker + emotion embeddings
         speaker_exp = tgt_speaker_emb.unsqueeze(1).expand(-1, T, -1)  # (B, T, 256)
-        emotion_vec = self.emotion_embedding(emotion_label)  # (B, 128)
+
+        # make the model compatible with both nn.Embedding and emotion2vec.
+        if emotion_embedding is not None:
+            emotion_vec = emotion_embedding  # (B, 128)
+        else:
+            emotion_vec = self.emotion_embedding(emotion_label)  # (B, 128)
+
         emotion_exp = emotion_vec.unsqueeze(1).expand(-1, T, -1)  # (B, T, 128)
 
         # 4. Fuse all embeddings (C + S + E)
