@@ -63,8 +63,7 @@ def main():
         train(model, emotion_classifier, dataloader,
               optimizer, optimizer_cls, device,
               num_epochs=config["training"]["epochs"],
-              lambda_ce=0.5,
-              lambda_spk=0.5,
+              lamda=1 ,mu = 1,lambda_ce=0.5,
               checkpoint_dir=config["training"]["checkpoint_dir"])
 
     # === INFERENCE MODE ===
@@ -82,7 +81,6 @@ def main():
               output_path=args.output,
               vocoder_type=args.vocoder,
               use_npy=args.use_npy)
-
 
 if __name__ == "__main__":
     main()
