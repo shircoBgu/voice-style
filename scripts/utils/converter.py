@@ -55,7 +55,7 @@ class VoiceConverter:
 
     # Load Universal HiFi-GAN vocoder
     def load_hifigan(self):
-        hifigan_dir = self.config["paths"]["pretrained_hifigan"]
+        hifigan_dir = self.config["paths"]["hifigan_pretrained"]
         config_file = os.path.join(hifigan_dir, "config.json")
         checkpoint_file = os.path.join(hifigan_dir, "generator_v1")
 
@@ -72,7 +72,7 @@ class VoiceConverter:
         model.load_state_dict(ckpt['generator'] if 'generator' in ckpt else ckpt)
 
         model.eval()
-        model.remove_weight_norm()  # Important for inference
+        model.remove_weight_norm()
         self.hifigan_model = model
 
     # Load alternative WaveNet vocoder
@@ -86,20 +86,6 @@ class VoiceConverter:
             raise FileNotFoundError("Missing WaveNet checkpoint or config")
 
         self.wavenet_model = WaveNetVocoderWrapper(checkpoint_path, hparams_path, self.device)
-
-    # Load RF5 HiFi-GAN vocoder packaged as .pt file
-    def load_rf5_hifigan(self):
-        svpath = Path(torch.hub.get_dir() + '/simple-autovc-hifigan.pt')
-        if not svpath.is_file():
-            torch.hub.download_url_to_file(
-                "https://github.com/RF5/simple-autovc/releases/download/stable/packaged_hifigan.pt",
-                svpath
-            )
-        importer = torch.package.PackageImporter(svpath)
-        vocoder = importer.load_pickle("models", "hifigan.pkl", map_location='cpu')
-        vocoder.eval()
-        vocoder.remove_weight_norm()
-        return vocoder
 
     # Load audio file and convert to HiFi-GAN-style mel-spectrogram
     def load_audio_as_mel(self, path, target_len=None):
@@ -142,6 +128,10 @@ class VoiceConverter:
 
     # Load mel directly from saved .npy file
     def load_mel_from_npy(self, path, target_len=None):
+        """
+        Load a precomputed mel spectrogram saved as (80, T) .npy file and prepare it for inference.
+        Returns: Tensor of shape (1, T, 80)
+        """
         mel = np.load(path)  # (80, T)
         mel = torch.tensor(mel.T, dtype=torch.float32)  # (T, 80)
 
@@ -166,7 +156,7 @@ class VoiceConverter:
         emotion_tensor = torch.tensor([emotion_label], dtype=torch.long).to(self.device)
 
         with torch.no_grad():
-            mel_out, _ = self.autovc_model(source_mel, target_mel, emotion_tensor)
+            mel_out,_,_,_,_,_ = self.autovc_model(source_mel, target_mel, emotion_tensor)
             mel_input = mel_out.transpose(1, 2)  # (B, 80, T)
 
             # Ensure mel dimensions match HiFi-GAN expectation
