@@ -6,19 +6,9 @@ from torch.nn import functional as F
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-from models import emotion_classifier
 from utils.emotion_utils import extract_emotion_embedding
 
 
-# Defines one full training epoch.
-# model: our AutoVC model
-# emotion_classifier: auxiliary classifier used for the emotion loss
-# dataloader: yields batches of (source, target, emotion)
-# optimizer: for AutoVC
-# optimizer_cls: for the emotion classifier
-# device: usually "cuda" or "cpu"
-# lambda_ce: weight for the emotion classification loss
-# lambda_spk: weight for the speaker loss
 
 # =======================================test=========================================
 def plot_mel_comparison(source_mel, target_mel, predicted_mel, step, save_dir, title_prefix=""):
@@ -64,9 +54,17 @@ def extract_epoch_num(filename):
     except:
         return -1  # fallback
 
-
-def train_one_epoch(model, dataloader, optimizer,
-                    device, lamda=1, mu=1, global_step=0):
+# Defines one full training epoch.
+# model: our AutoVC model
+# emotion_classifier: auxiliary classifier used for the emotion loss
+# dataloader: yields batches of (source, target, emotion)
+# optimizer: for AutoVC
+# optimizer_cls: for the emotion classifier
+# device: usually "cuda" or "cpu"
+# lambda + mu - for autovc losses
+# lambda_ce: weight for the emotion classification loss
+def train_one_epoch(model, emotion_classifier, dataloader, optimizer,
+                    optimizer_cls, device, lamda=1, mu=1, lambda_ce, global_step=0):
     # Puts both models into training mode.
     model.train()
     emotion_classifier.train()
@@ -150,9 +148,9 @@ def train_one_epoch(model, dataloader, optimizer,
     return avg_recon, avg_recon_post, avg_content_loss, avg_ce, global_step
 
 
-def train(model, dataloader,
-          optimizer, device,
-          num_epochs=100, lamda=1, mu=1,
+def train(model, emotion_classifier, dataloader,
+          optimizer,optimizer_cls, device,
+          num_epochs=100, lamda=1, mu=1, lambda_ce,
           checkpoint_dir="checkpoints"):
     """
     Trains the model over multiple epochs.
@@ -164,8 +162,8 @@ def train(model, dataloader,
         optimizer_cls: optimizer for the classifier
         device: "cuda" or "cpu"
         num_epochs: number of epochs to train
+        lambda + mu - for autovc losses
         lambda_ce: weight for emotion classification loss
-        lambda_spk: weight for the speaker loss
         checkpoint_dir: directory to save model checkpoints
     """
 
