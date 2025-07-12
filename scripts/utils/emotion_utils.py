@@ -1,22 +1,35 @@
-# emotion_utils.py
 import torch
 from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
+import torchaudio
 
-# Initialize the emotion2vec pipeline once (global singleton)
+# Initialize the pipeline globally
 emotion2vec_pipeline = pipeline(
     task=Tasks.emotion_recognition,
     model="iic/emotion2vec_base"
 )
 
 
-def extract_emotion_embedding(wav_path, pipe=None):
+def resample_to_16k(wav_tensor, orig_sr=22050, target_sr=16000):
     """
-    Extracts a 64-dimensional emotion embedding from a given .wav file.
+    Resamples waveform tensor from orig_sr to target_sr.
+    """
+    if not isinstance(wav_tensor, torch.Tensor):
+        wav_tensor = torch.tensor(wav_tensor)
+    resampler = torchaudio.transforms.Resample(orig_freq=orig_sr, new_freq=target_sr)
+    return resampler(wav_tensor).float()
+
+
+def extract_emotion_embedding(input_data, sr=16000, pipe=None):
+    """
+    Extracts a 64-dimensional emotion embedding from either:
+    - a .wav file path
+    - a waveform (numpy or torch tensor)
 
     Args:
-        wav_path (str): Path to the audio file.
-        pipe (optional): Provide a pipeline instance if already created.
+        input_data: str (wav path) or waveform (np.ndarray or torch.Tensor)
+        sr (int): sample rate of waveform. Should be 16000 for emotion2vec.
+        pipe: optional pipeline instance
 
     Returns:
         torch.Tensor: Emotion embedding of shape (64,)
@@ -24,9 +37,28 @@ def extract_emotion_embedding(wav_path, pipe=None):
     if pipe is None:
         pipe = emotion2vec_pipeline
 
-    result = pipe(wav_path, extract_embedding=True)
-    emb = result['embedding']  # (64,)
-    return torch.tensor(emb).float()
+    # Load or use waveform
+    if isinstance(input_data, str):  # assume it's a path
+        result = pipe(
+            input_data,
+            extract_embedding=True,
+            granularity="utterance",
+            output_dir="./outputs"
+        )
+    else:
+        # waveform input: convert to numpy
+        if isinstance(input_data, torch.Tensor):
+            input_data = input_data.detach().cpu().numpy()
+        if sr != 16000:
+            input_data = resample_to_16k(input_data, orig_sr=sr).numpy()
+        result = pipe(
+            input_data,
+            extract_embedding=True,
+            granularity="utterance",
+            output_dir="./outputs"
+        )
+
+    return torch.tensor(result['embedding']).float()
 
 
 # Accuracy test
