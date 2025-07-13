@@ -6,7 +6,7 @@ import torchaudio
 # Initialize the pipeline globally
 emotion2vec_pipeline = pipeline(
     task=Tasks.emotion_recognition,
-    model="iic/emotion2vec_base"
+    model="iic/emotion2vec_plus_seed"
 )
 
 
@@ -22,7 +22,7 @@ def resample_to_16k(wav_tensor, orig_sr=22050, target_sr=16000):
 
 def extract_emotion_embedding(input_data, sr=16000, pipe=None):
     """
-    Extracts a 64-dimensional emotion embedding from either:
+    Extracts a 768-dimensional emotion embedding from either:
     - a .wav file path
     - a waveform (numpy or torch tensor)
 
@@ -32,30 +32,29 @@ def extract_emotion_embedding(input_data, sr=16000, pipe=None):
         pipe: optional pipeline instance
 
     Returns:
-        torch.Tensor: Emotion embedding of shape (768,) ??????
+        torch.Tensor: Emotion embedding of shape (768,)
     """
     if pipe is None:
         pipe = emotion2vec_pipeline
 
     # Load or use waveform
-    if isinstance(input_data, str):  # assume it's a path
+    if isinstance(input_data, str):
         result = pipe(
             input_data,
             extract_embedding=True,
-            granularity="utterance",
-            output_dir="./outputs"
+            granularity="utterance"
         )
     else:
-        # waveform input: convert to numpy
         if isinstance(input_data, torch.Tensor):
-            input_data = input_data.detach().cpu().numpy()
+            input_data = input_data.detach().cpu()
+        else:
+            input_data = torch.tensor(input_data).float()
         if sr != 16000:
-            input_data = resample_to_16k(input_data, orig_sr=sr).numpy()
+            input_data = resample_to_16k(input_data, orig_sr=sr)
         result = pipe(
-            input_data,
+            input_data.numpy(),
             extract_embedding=True,
-            granularity="utterance",
-            output_dir="./outputs"
+            granularity="utterance"
         )
 
     return torch.tensor(result[0]['feats']).float()
