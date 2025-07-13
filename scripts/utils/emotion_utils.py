@@ -32,7 +32,7 @@ def extract_emotion_embedding(input_data, sr=16000, pipe=None):
         pipe: optional pipeline instance
 
     Returns:
-        torch.Tensor: Emotion embedding of shape (64,)
+        torch.Tensor: Emotion embedding of shape (768,) ??????
     """
     if pipe is None:
         pipe = emotion2vec_pipeline
@@ -58,7 +58,7 @@ def extract_emotion_embedding(input_data, sr=16000, pipe=None):
             output_dir="./outputs"
         )
 
-    return torch.tensor(result['embedding']).float()
+    return torch.tensor(result[0]['feats']).float()
 
 
 # Accuracy test
