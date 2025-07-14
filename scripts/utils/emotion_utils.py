@@ -41,8 +41,8 @@ def extract_emotion_embedding(input_data, sr=16000, pipe=None):
     if isinstance(input_data, str):
         result = pipe(
             input_data,
-            extract_embedding=True,
-            granularity="utterance"
+            granularity="utterance",
+            extract_embedding=True, 
         )
     else:
         if isinstance(input_data, torch.Tensor):
@@ -53,11 +53,12 @@ def extract_emotion_embedding(input_data, sr=16000, pipe=None):
             input_data = resample_to_16k(input_data, orig_sr=sr)
         result = pipe(
             input_data.numpy(),
+            granularity="utterance",
             extract_embedding=True,
-            granularity="utterance"
+            
         )
-
-    return torch.tensor(result[0]['feats']).float()
+    
+    return result[0]
 
 
 # Accuracy test
