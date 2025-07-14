@@ -13,11 +13,11 @@ from models.autoVC.blocks import ConvNorm, LinearNorm
 
 
 class Decoder(nn.Module):
-    # input_dim = 64 + 256 + 128 = 448:
+    # input_dim = 64 + 256 + 768 = 1088:
     # dim_neck = 32 → content_dim = 2 * dim_neck = 64
     # speaker_emb_dim = 256 (from pretrained speaker encoder)
-    # emotion_emb_dim = 128 (from nn.Embedding(num_emotions,128))
-    def __init__(self, input_dim: int = 448, dim_pre: int = 512, output_dim: int = 80):
+    # emotion_emb_dim = 768 (from emotion2vec)
+    def __init__(self, input_dim: int = 1088, dim_pre: int = 512, output_dim: int = 80):
         super(Decoder, self).__init__()
 
         self.lstm1 = nn.LSTM(input_dim, dim_pre, num_layers=1, batch_first=True)
