@@ -13,7 +13,7 @@ class AutoVC(nn.Module):
                  dim_neck=32,
                  freq=32,
                  speaker_emb_dim=256,
-                 emotion_emb_dim=128,
+                 emotion_emb_dim=768,
                  mel_dim=80):
         super(AutoVC, self).__init__()
 
