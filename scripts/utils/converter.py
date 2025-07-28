@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from scipy.io.wavfile import write
 from hifigan.models import Generator
 from hifigan.env import AttrDict
+from wavenet_vocoder.wavenet_vocoder import WaveNet
 
 
 def extract_epoch_num(filename):
@@ -48,6 +49,44 @@ class VoiceConverter:
             self.autovc_model = model
         else:
             raise ValueError("Checkpoint missing 'model_state'")
+
+    def load_wavenet(self):
+        wavenet_dir = self.config["paths"]["pretrained_wavenet"]
+        config_path = os.path.join(wavenet_dir, "20180510_mixture_lj_checkpoint_step000320000_ema.json")
+        checkpoint_path = os.path.join(wavenet_dir, "20180510_mixture_lj_checkpoint_step000320000_ema.pth")
+
+        if not os.path.exists(config_path) or not os.path.exists(checkpoint_path):
+            raise FileNotFoundError("WaveNet model or config not found")
+
+        # Load hparams
+        with open(config_path) as f:
+            hparams = json.load(f)
+
+        self.wavenet_config = hparams  # Save for inference
+        model = WaveNet(
+            out_channels=30,
+            layers=24,
+            stacks=4,
+            residual_channels=512,
+            gate_channels=512,
+            skip_out_channels=256,
+            kernel_size=3,
+            dropout=0.05,
+            cin_channels=80,
+            gin_channels=-1,
+            upsample_conditional_features=True,
+            upsample_net="ConvInUpsampleNetwork",
+            upsample_params={
+                "upsample_scales": [4, 4, 4, 4],
+                "freq_axis_kernel_size": 3
+            },
+            scalar_input=True,
+            output_distribution="Logistic"
+        )
+        checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
+        model.load_state_dict(checkpoint["state_dict"])
+        model.eval()
+        self.wavenet_model = model.to(self.device)
 
     def load_hifigan(self):
         hifigan_dir = self.config["paths"]["hifigan_pretrained"]
@@ -119,8 +158,6 @@ class VoiceConverter:
         source_mel = load_mel(source_path)
         target_mel = load_mel(target_path, target_len=source_mel.shape[1])
 
-        # emotion_tensor = torch.tensor([emotion_label], dtype=torch.long).to(self.device)
-
         with torch.no_grad():
             mel_out, _, _, _, _, _ = self.autovc_model(source_mel, target_mel)
             audio = self.hifigan_model(mel_out.transpose(1, 2)).squeeze().cpu().numpy()
@@ -161,4 +198,3 @@ class VoiceConverter:
             print("  Max:", mel_out.max().item())
             print("  Mean:", mel_out.mean().item())
             print("  Std:", mel_out.std().item())
-            # print("Emotion tensor used:", emotion_tensor)
