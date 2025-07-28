@@ -1,6 +1,6 @@
 # Voice Style Transfer with Emotion Conditioning
 
-This project implements a modified version of [AutoVC](https://arxiv.org/abs/1905.03871) for voice conversion with additional conditioning on **speaker identity** and **emotional style**. It enables transferring both the voice and emotional tone from one speaker to another while preserving the linguistic content.
+This project implements a modified version of [AutoVC](https://github.com/auspicious3000/autovc/blob/master/README.md?plain=1) for voice conversion with additional conditioning on **speaker identity** and **emotional style**. It enables transferring both the voice and emotional tone from one speaker to another while preserving the linguistic content.
 
 The project also integrates a HiFi-GAN vocoder for high-quality waveform synthesis and supports training over multiple emotion-labeled datasets.
 
