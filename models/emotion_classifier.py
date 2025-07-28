@@ -1,8 +1,8 @@
 from torch import nn
 
 class EmotionClassifier(nn.Module):
-    def __init__(self, num_emotions=11):
-        # emotion classes: angry, excited, fear, sad, surprised, frustrated, happy, disappointed, neutral
+    def __init__(self, num_emotions=8):
+        # emotion classes: 'angry' '<unk>' 'sad' 'neutral' 'happy' 'surprised' 'fearful' 'other'
         super().__init__()
 
         self.cnn_layers = nn.Sequential(
