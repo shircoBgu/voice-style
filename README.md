@@ -155,9 +155,9 @@ To resume training, place existing checkpoints in `checkpoints/`:
 
 ## References
 
-- [AutoVC: One-Shot Voice Conversion](https://arxiv.org/abs/1905.03871)
+- [AutoVC: One-Shot Voice Conversion](https://arxiv.org/abs/1905.05879)
 - [HiFi-GAN](https://arxiv.org/abs/2010.05646)
-- [Emotion2Vec (ModelScope)](https://modelscope.cn/models/iic/emotion2vec_plus_seed/summary)
+- [Emotion2Vec](https://arxiv.org/abs/2312.15185)
 
 ---
 
