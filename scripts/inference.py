@@ -5,7 +5,7 @@ from scripts.utils.converter import VoiceConverter
 from models.autoVC.autovc import AutoVC
 
 
-def inference(config, source_path, target_path, output_path, use_npy=False):
+def inference(config, source_path, target_path, emotion_label, output_path, use_npy=False):
     """
     Perform voice conversion given config and input/output paths.
 
@@ -20,25 +20,23 @@ def inference(config, source_path, target_path, output_path, use_npy=False):
     # Initialize the voice converter
     converter = VoiceConverter(config)
     converter.load_autovc(model_class=AutoVC)  # Load trained AutoVC model
-    converter.load_hifigan()
-    # if vocoder_type == "hifigan":
-    #     converter.load_hifigan()
-    # elif vocoder_type == "wavenet":
-    #     converter.load_wavenet()
-    # else:
-    #     raise ValueError(f"Unsupported vocoder type: {vocoder_type}")
+    if vocoder_type == "hifigan":
+        converter.load_hifigan()
+    elif vocoder_type == "wavenet":
+        converter.load_wavenet()
+    else:
+        raise ValueError(f"Unsupported vocoder type: {vocoder_type}")
 
-    # if isinstance(emotion_label, str):
-    #     try:
-    #         emotion_label = converter.emo2idx[emotion_label]
-    #     except KeyError:
-    #         raise ValueError(f"Invalid emotion label '{emotion_label}'. Available: {list(converter.emo2idx.keys())}")
+    if isinstance(emotion_label, str):
+        try:
+            emotion_label = converter.emo2idx[emotion_label]
+        except KeyError:
+            raise ValueError(f"Invalid emotion label '{emotion_label}'. Available: {list(converter.emo2idx.keys())}")
 
     # Perform voice conversion
     converter.convert(
         source_path=source_path,
         target_path=target_path,
-        # emotion_label=emotion_label,
         output_path=output_path,
         use_npy=use_npy
     )
