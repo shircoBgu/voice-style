@@ -1,27 +1,20 @@
-voice-style-project/
-├── config.json
-├── main.py
-├── requirements.txt
-├── README.md
-├── data/
-├── models/
-│   ├── autoVC/
-│   │   ├── autovc.py
-│   │   ├── content_encoder.py
-│   │   ├── decoder.py
-│   │   ├── postnet.py
-│   │   ├── speaker_encoder.py
-│   ├── EmotionClassifier.py
-│   └── hifigan_pretrained/
-│       ├── config.json
-│       └── generator_v1
-├── scripts/
-│   ├── train.py
-│   ├── inference.py
-│   └── utils/
-│       ├── emotion_accuracy.py
-│       ├── mel_dataset.py
-│       ├── converter.py
-├── notebooks/
-│   └── test_autoVC.py
-└── tests/
+# Voice Style Transfer with Emotion Conditioning
+
+This project implements a modified version of [AutoVC](https://arxiv.org/abs/1905.03871) for voice conversion with additional conditioning on **speaker identity** and **emotional style**. It enables transferring both the voice and emotional tone from one speaker to another while preserving the linguistic content.
+
+The project also integrates a HiFi-GAN vocoder for high-quality waveform synthesis and supports training over multiple emotion-labeled datasets.
+
+## Features
+
+- Based on AutoVC: encoder → bottleneck → decoder architecture
+- Conditioning on:
+  - Source mel-spectrogram (linguistic content)
+  - Target speaker identity (via embeddings or classifier)
+  - Target emotion (via Emotion2Vec or emotion classifier)
+- Reconstruction loss, content consistency loss, and emotion embedding loss
+- HiFi-GAN vocoder for mel-to-wav synthesis
+- Training on multiple datasets (e.g., IEMOCAP, CREMA-D, VCTK)
+- Supports inference from `.wav` or `.npy` files
+- Visualization of spectrogram output
+
+## Directory Structure
