@@ -30,16 +30,18 @@ class AutoVC(nn.Module):
         self.speaker_encoder = PretrainedSpeakerEncoder(ckpt_path="3000000-BL.ckpt", device=device)
         for param in self.speaker_encoder.parameters():
             param.requires_grad = False
-        self.decoder_input_dim = 2 * dim_neck + speaker_emb_dim + emotion_emb_dim
+        # self.decoder_input_dim = 2 * dim_neck + speaker_emb_dim + emotion_emb_dim
+        self.decoder_input_dim = 2 * dim_neck + speaker_emb_dim + 256  # size of the emotion after projection
 
         self.decoder = Decoder(input_dim=self.decoder_input_dim,
-                               dim_pre=512,
+                               dim_pre=256,
                                output_dim=mel_dim)
 
         self.emotion_embedding = nn.Embedding(num_emotions, emotion_emb_dim)
         self.speaker_classifier = nn.Linear(speaker_emb_dim, num_speakers)
         self.postnet = Postnet()
         self.use_postnet = True
+        self.emotion_proj = nn.Linear(emotion_emb_dim, 256)  # smaller emotion embedding dimension
 
     def forward(self, source_mel, target_mel, emotion_embedding=None, emotion_label=None):
         """
@@ -68,7 +70,7 @@ class AutoVC(nn.Module):
         tgt_speaker_emb = self.speaker_encoder(target_mel)  # (B, 256)
         spk_logits = self.speaker_classifier(tgt_speaker_emb)  # (B, num_speakers)
 
-        # 2. Encode content using src speaker embedding
+        # 3. Encode content using src speaker embedding
         codes = self.content_encoder(source_mel, src_speaker_emb)  # list of (B, 64)
 
         segment_len = T // len(codes)
@@ -84,12 +86,13 @@ class AutoVC(nn.Module):
             pad = content_emb[:, -1:, :].expand(-1, pad_len, -1)
             content_emb = torch.cat([content_emb, pad], dim=1)
 
-        # 3. 4. Expand target speaker + emotion embeddings
+        #  4. Expand target speaker + emotion embeddings
         speaker_exp = tgt_speaker_emb.unsqueeze(1).expand(-1, T, -1)  # (B, T, 256)
 
         # make the model compatible with both nn.Embedding and emotion2vec.
         if emotion_embedding is not None:
-            emotion_vec = emotion_embedding  # (B, 128)
+            emotion_embedding = self.emotion_proj(emotion_embedding)
+            emotion_vec = emotion_embedding  # (B, 256)
         else:
             emotion_vec = self.emotion_embedding(emotion_label)  # (B, 128)
 

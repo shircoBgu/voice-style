@@ -49,7 +49,7 @@ def main():
         # Initialize models
         num_speakers = len(dataset.speaker2idx)
         num_emotions = len(dataset.emo2idx)
-        model = AutoVC( num_emotions=num_emotions,num_speakers=num_speakers).to(device)
+        model = AutoVC(num_emotions=num_emotions,num_speakers=num_speakers).to(device)
         #emotion_classifier = EmotionClassifier(num_emotions=num_emotions).to(device)
 
         # Initialize optimizers

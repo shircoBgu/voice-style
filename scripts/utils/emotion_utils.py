@@ -1,23 +1,16 @@
+# emotion_utils.py
 import torch
+import torchaudio
 from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
-import torchaudio
+import contextlib
+import io
 
-# Initialize the pipeline globally
+# Initialize the emotion2vec pipeline once (global singleton)
 emotion2vec_pipeline = pipeline(
     task=Tasks.emotion_recognition,
     model="iic/emotion2vec_plus_seed"
 )
-
-
-def resample_to_16k(wav_tensor, orig_sr=22050, target_sr=16000):
-    """
-    Resamples waveform tensor from orig_sr to target_sr.
-    """
-    if not isinstance(wav_tensor, torch.Tensor):
-        wav_tensor = torch.tensor(wav_tensor)
-    resampler = torchaudio.transforms.Resample(orig_freq=orig_sr, new_freq=target_sr)
-    return resampler(wav_tensor).float()
 
 
 def extract_emotion_embedding(input_data, sr=16000, pipe=None):
@@ -39,11 +32,12 @@ def extract_emotion_embedding(input_data, sr=16000, pipe=None):
 
     # Load or use waveform
     if isinstance(input_data, str):
-        result = pipe(
-            input_data,
-            granularity="utterance",
-            extract_embedding=True, 
-        )
+        with contextlib.redirect_stdout(io.StringIO()):
+            result = pipe(
+                input_data,
+                granularity="utterance",
+                extract_embedding=True,
+            )
     else:
         if isinstance(input_data, torch.Tensor):
             input_data = input_data.detach().cpu()
@@ -51,13 +45,14 @@ def extract_emotion_embedding(input_data, sr=16000, pipe=None):
             input_data = torch.tensor(input_data).float()
         if sr != 16000:
             input_data = resample_to_16k(input_data, orig_sr=sr)
-        result = pipe(
-            input_data.numpy(),
-            granularity="utterance",
-            extract_embedding=True,
-            
-        )
-    
+        with contextlib.redirect_stdout(io.StringIO()):
+            result = pipe(
+                input_data.numpy(),
+                granularity="utterance",
+                extract_embedding=True,
+
+            )
+
     return result[0]
 
 
@@ -78,3 +73,13 @@ def emotion_accuracy(logits, emotion_labels):
     total = emotion_labels.size(0)  # batch size
     accuracy = correct / total
     return accuracy
+
+
+def resample_to_16k(wav_tensor, orig_sr=22050, target_sr=16000):
+    """
+    Resamples waveform tensor from orig_sr to target_sr.
+    """
+    if not isinstance(wav_tensor, torch.Tensor):
+        wav_tensor = torch.tensor(wav_tensor)
+    resampler = torchaudio.transforms.Resample(orig_freq=orig_sr, new_freq=target_sr)
+    return resampler(wav_tensor).float()

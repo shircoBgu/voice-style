@@ -16,7 +16,7 @@ class Decoder(nn.Module):
     # input_dim = 64 + 256 + 768 = 1088:
     # dim_neck = 32 → content_dim = 2 * dim_neck = 64
     # speaker_emb_dim = 256 (from pretrained speaker encoder)
-    # emotion_emb_dim = 768 (from emotion2vec)
+    # emotion_emb_dim = 768 (from emo2vec)
     def __init__(self, input_dim: int = 1088, dim_pre: int = 512, output_dim: int = 80):
         super(Decoder, self).__init__()
 
@@ -50,5 +50,5 @@ class Decoder(nn.Module):
         x = x.transpose(1, 2)  # back to (B, T, H)
 
         x, _ = self.lstm2(x)  # (B, T, 1024)
-        mel_out = self.linear (x)  # (B, T, 80)
+        mel_out = self.linear(x)  # (B, T, 80)
         return mel_out
