@@ -18,6 +18,7 @@ def parse_args():
     parser.add_argument('--source', type=str, help='Path to source audio')
     parser.add_argument('--target', type=str, help='Path to target speaker audio')
     parser.add_argument('--emotion', type=str, help='Emotion label')
+    parser.add_argument('--vocoder', type=str, help='Wavenet or HIFI-GAN')
     parser.add_argument('--output', type=str, help='Path to save converted audio')
     parser.add_argument('--dataset', type=str, help='Dataset ID to train on (e.g., IEMOCAP, VCTK, CREAMD)')
     parser.add_argument('--use_npy', action='store_true',
@@ -49,19 +50,19 @@ def main():
         # Initialize models
         num_speakers = len(dataset.speaker2idx)
         num_emotions = len(dataset.emo2idx)
-        model = AutoVC(num_emotions=num_emotions,num_speakers=num_speakers).to(device)
-        #emotion_classifier = EmotionClassifier(num_emotions=num_emotions).to(device)
+        model = AutoVC(num_emotions=num_emotions, num_speakers=num_speakers).to(device)
+        emotion_classifier = EmotionClassifier(num_emotions=num_emotions).to(device)
 
         # Initialize optimizers
         lr = config["training"]["learning_rate"]
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-        #optimizer_cls = torch.optim.Adam(emotion_classifier.parameters(), lr=lr)
+        optimizer_cls = torch.optim.Adam(emotion_classifier.parameters(), lr=lr)
 
         # Begin training
-        train(model, dataloader,
-              optimizer, device,
+        train(model, emotion_classifier, dataloader,
+              optimizer, optimizer_cls, device,
               num_epochs=config["training"]["epochs"],
-              lamda=1 ,mu = 1,lamda_emo = 0.5,
+              lamda=1, mu=1, lamda_emo=0.5,
               checkpoint_dir=config["training"]["checkpoint_dir"])
 
     # === INFERENCE MODE ===
@@ -74,8 +75,8 @@ def main():
         inference(config=config,
                   source_path=args.source,
                   target_path=args.target,
-                  #emotion_label=args.emotion,
                   output_path=args.output,
+                  vocoder_type=args.vocoder,
                   use_npy=args.use_npy)
 
 
