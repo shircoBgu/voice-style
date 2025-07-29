@@ -55,8 +55,8 @@ voice-style-project/
 ## Installation
 
 ```bash
-git clone https://github.com/shircoBgu/voice_style_project.git
-cd voice_style_project
+git clone https://github.com/shircoBgu/voice-style.git
+cd voice_style
 pip install -r requirements.txt
 ```
 
