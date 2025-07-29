@@ -9,16 +9,6 @@ from scripts.utils.emotion_utils import extract_emotion_embedding
 from scripts.utils.converter import VoiceConverter
 
 
-# Defines one full training epoch.
-# model: our AutoVC model
-# emotion_classifier: auxiliary classifier used for the emotion loss
-# dataloader: yields batches of (source, target, emotion)
-# optimizer: for AutoVC
-# optimizer_cls: for the emotion classifier
-# device: usually "cuda" or "cpu"
-# lambda_ce: weight for the emotion classification loss
-# lambda_spk: weight for the speaker loss
-
 # =======================================test=========================================
 def plot_mel_comparison(source_mel, target_mel, predicted_mel, step, save_dir, title_prefix=""):
     os.makedirs(save_dir, exist_ok=True)
@@ -53,7 +43,7 @@ def plot_mel_comparison(source_mel, target_mel, predicted_mel, step, save_dir, t
     # Save the plot
     filename = os.path.join(save_dir, f"mel_plot_step_{step:05d}.png")
     plt.savefig(filename)
-    plt.close(fig)  # Don't keep figures open
+    plt.close(fig)
 
 
 def extract_epoch_num(filename):
@@ -63,16 +53,31 @@ def extract_epoch_num(filename):
         return -1
 
 
+'''
+Defines one full training epoch.
+model: our AutoVC model
+emotion_classifier: auxiliary classifier used for the emotion loss
+dataloader: yields batches of (source, target, emotion)
+optimizer: for AutoVC
+optimizer_cls: for the emotion classifier
+device: usually "cuda" or "cpu"
+lambda_ce: weight for the emotion classification loss
+lambda_spk: weight for the speaker loss
+'''
+
+
 def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_cls,
                     device, lamda=1, mu=1, lamda_emo=0.5, global_step=0):
     # Puts both models into training mode.
     model.train()
     emotion_classifier.train()
+
     # Initialize accumulators to track average losses across all batches.
     total_recon_loss = 0
     total_emotion_loss = 0
     total_recon_loss_post = 0
     total_content_loss = 0
+    total_cls_loss = 0
 
     for source_mel, target_mel, target_emotion_id, target_speaker_id, src_wav_path, tgt_wav_path in tqdm(dataloader):
         source_mel = source_mel.to(device)  # (B, T, 80)
@@ -122,13 +127,13 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
         emotion_label = emotion_pred['labels'][0]
         l_emo = f.l1_loss(emotion_emb_pred, emotion_emb_trg)
 
-        # === Loss: Emotion classification ===
+        # emotion classification loss ===
         logits = emotion_classifier(content_emb.detach())
         # Compares it to the ground truth emotion label using cross-entropy loss
         ce_loss = f.cross_entropy(logits, emotion_label)
 
         # === Combine losses ===
-        total_loss = recon_loss + recon_loss_post * mu + content_loss * lamda + l_emo * lamda_emo
+        total_loss = recon_loss + recon_loss_post * mu + content_loss * lamda + l_emo * lamda_emo + ce_loss
 
         # === Backprop ===
         optimizer.zero_grad()
@@ -142,17 +147,19 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
         total_emotion_loss += l_emo.item()
         total_recon_loss_post += recon_loss_post.item()
         total_content_loss += content_loss.item()
+        total_cls_loss += ce_loss.item()
 
     avg_recon = total_recon_loss / max(len(dataloader), 1)
     avg_emo = total_emotion_loss / max(len(dataloader), 1)
+    avg_ce_loss = total_cls_loss / max(len(dataloader), 1)
     avg_recon_post = total_recon_loss_post / max(len(dataloader), 1)
     avg_content_loss = total_content_loss / max(len(dataloader), 1)
 
     print(
-        f"Avg Recon: {avg_recon:.4f} | Avg Recon Post: {recon_loss_post:.4f}"
-        f" | Avg Content Recon: {avg_content_loss:.4f}| Avg Emotion: {l_emo:.4f}")
+        f"Avg Recon: {avg_recon:.4f} | Avg Recon Post: {avg_recon_post:.4f}"
+        f" | Avg Content Recon: {avg_content_loss:.4f}| Avg Emotion: {avg_emo:.4f} | Avg Emotion CE: {avg_ce_loss:.4f}")
 
-    return avg_recon, avg_recon_post, avg_content_loss, avg_emo, global_step
+    return avg_recon, avg_recon_post, avg_content_loss, avg_emo, avg_ce_loss, global_step
 
 
 def train(model, emotion_classifier, dataloader,
@@ -207,14 +214,14 @@ def train(model, emotion_classifier, dataloader,
     for epoch in range(start_epoch, start_epoch + num_epochs):
         print(f"\nEpoch {epoch}/{start_epoch + num_epochs - 1}")
         global_step = 0
-        avg_recon, avg_recon_post, avg_content_loss, avg_emotion_loss, global_step = train_one_epoch(
+        avg_recon, avg_recon_post, avg_content_loss, avg_emotion_loss, avg_ce_loss, global_step = train_one_epoch(
             model, emotion_classifier, dataloader,
             optimizer, optimizer_cls, device,
             lamda, mu, lamda_emo, global_step=global_step
         )
 
-        print(f"Recon Post: {avg_recon_post:.4f}  | content: {avg_content_loss:.4f}| emotion: {avg_emotion_loss:.4f}")
-
+        print(
+            f"Recon Post: {avg_recon_post:.4f} | Content: {avg_content_loss:.4f} | Emotion: {avg_emotion_loss:.4f} | CE: {avg_ce_loss:.4f}")
         # Save model checkpoints
         autovc_path = os.path.join(checkpoint_dir, f"autovc_epoch{epoch}.pt")
         emotion_path = os.path.join(checkpoint_dir, f"emotion_epoch{epoch}.pt")
@@ -236,6 +243,7 @@ def train(model, emotion_classifier, dataloader,
         history["emotion"].append(avg_emotion_loss)
         history["recon_post"].append(avg_recon_post)
         history["content_recon"].append(avg_content_loss)
+        history["emotion_ce"].append(avg_ce_loss)
 
     torch.save(history, os.path.join(checkpoint_dir, "train_history.pt"))
 
@@ -266,6 +274,13 @@ def train(model, emotion_classifier, dataloader,
     plt.subplot(1, 5, 4)
     plt.plot(history["content_recon"])
     plt.title("content_recon")
+    plt.xlabel("Epoch")
+    plt.ylim(0, 3)
+    plt.grid(True)
+
+    plt.subplot(1, 5, 5)
+    plt.plot(history["emotion_ce"])
+    plt.title("CE Loss")
     plt.xlabel("Epoch")
     plt.ylim(0, 3)
     plt.grid(True)
