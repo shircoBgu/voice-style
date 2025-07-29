@@ -128,7 +128,7 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
         l_emo = f.l1_loss(emotion_emb_pred, emotion_emb_trg)
 
         # emotion classification loss ===
-        logits = emotion_classifier(content_emb.detach())
+        logits = emotion_classifier(emotion_emb_pred.detach())
         # Compares it to the ground truth emotion label using cross-entropy loss
         ce_loss = f.cross_entropy(logits, emotion_label)
 
