@@ -1,6 +1,4 @@
 import os
-import random
-
 import torch
 from torch.utils.data import Dataset
 import numpy as np
@@ -58,7 +56,7 @@ class MelDataset(Dataset):
         # Get rows for same speaker & same emotion 
         # same_speaker_df = self.df[self.df['global_speaker'] == src_speaker] #same speaker only
         same_speaker_and_emotion_df = self.df[(self.df['global_speaker'] == src_speaker) & (
-                    self.df['emotion_label'] == src_emotion)]  # same speaker same emotion
+                self.df['emotion_label'] == src_emotion)]  # same speaker same emotion
 
         # Ensure at least two different utterances exist
         if len(same_speaker_and_emotion_df) < 2:

@@ -2,7 +2,6 @@
 # Content encoder: bidirectional LSTM → FC
 from models.autoVC.blocks import ConvNorm  # uses Xavier init with gain
 
-
 import torch
 import torch.nn as nn
 

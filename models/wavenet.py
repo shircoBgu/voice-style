@@ -2,8 +2,8 @@ import json
 
 import torch
 
-from wavenet_vocoder.train import build_model
 from wavenet_vocoder.hparams import hparams as default_hparams
+
 
 class WaveNetVocoderWrapper:
     def __init__(self, checkpoint_path, hparams_path, device):

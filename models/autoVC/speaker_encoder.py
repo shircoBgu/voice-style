@@ -2,7 +2,7 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+
 
 class SpeakerEncoder(nn.Module):
     """
@@ -12,6 +12,7 @@ class SpeakerEncoder(nn.Module):
     - Global average pooling
     - Final Linear projection
     """
+
     def __init__(self, input_dim=80, hidden_dim=512, output_dim=128):
         super(SpeakerEncoder, self).__init__()
 

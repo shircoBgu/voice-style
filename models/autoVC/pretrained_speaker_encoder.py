@@ -3,6 +3,7 @@
 import torch
 import torch.nn as nn
 
+
 class PretrainedSpeakerEncoder(nn.Module):
     def __init__(self, ckpt_path, device='cpu'):
         super().__init__()
@@ -41,10 +42,10 @@ class PretrainedSpeakerEncoder(nn.Module):
 
     def forward(self, x):
         x = x.transpose(1, 2)  # (B, 80, T)
-        x = self.conv(x)       # (B, 512, T)
+        x = self.conv(x)  # (B, 512, T)
         x = x.transpose(1, 2)  # (B, T, 512)
         self.lstm.flatten_parameters()
-        x, _ = self.lstm(x)    # (B, T, 256)
-        x = self.proj(x)       # (B, T, 256)
+        x, _ = self.lstm(x)  # (B, T, 256)
+        x = self.proj(x)  # (B, T, 256)
         x = torch.mean(x, dim=1)  # (B, 256)
         return x

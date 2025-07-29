@@ -1,6 +1,5 @@
 # models/postnet.py
 
-import torch
 import torch.nn as nn
 from models.autoVC.blocks import ConvNorm  # uses Xavier init
 
@@ -13,6 +12,7 @@ class Postnet(nn.Module):
     - Final layer is linear
     - Residual: output = decoder_output + postnet_output
     """
+
     def __init__(self, mel_dim=80, hidden_dim=512, kernel_size=5):
         super(Postnet, self).__init__()
 

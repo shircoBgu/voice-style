@@ -20,6 +20,8 @@ def extract_epoch_num(filename):
 
 class VoiceConverter:
     def __init__(self, config):
+        self.wavenet_config = None
+        self.wavenet_model = None
         self.config = config
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.emo2idx = None
@@ -28,6 +30,7 @@ class VoiceConverter:
         self.hifigan_model = None
 
     def load_autovc(self, model_class, checkpoint_path=None):
+        global candidates
         if checkpoint_path is None:
             ckpt_dir = self.config["training"].get("checkpoint_dir")
             candidates = glob.glob(os.path.join(ckpt_dir, "checkpoint_epoch*.pt"))
