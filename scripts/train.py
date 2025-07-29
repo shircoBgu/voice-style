@@ -111,12 +111,12 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
         recon_loss = f.mse_loss(mel_pred, source_mel)
         print(f"recon loss:{recon_loss:.4f}")
 
-        # conent embedding loss
+        # === conent embedding loss ===
         content_recon = model.content_encoder(mel_pred_post, src_spk_emb)
         content_recon = torch.cat(content_recon, dim=-1)
         content_loss = f.l1_loss(content_emb, content_recon)
 
-        # emotion2vec loss
+        # === emotion2vec loss ===
         config = {"paths": {"hifigan_pretrained": "models/hifigan_pretrained"}}
         converter = VoiceConverter(config)
         converter.load_hifigan()  # Load HiFi-GAN vocoder
@@ -124,13 +124,18 @@ def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_
             wave_pred = converter.hifigan_model(mel_pred_post.transpose(1, 2)).squeeze().cpu().numpy()
         emotion_pred = extract_emotion_embedding(wave_pred, sr=16000, pipe=None)
         emotion_emb_pred = torch.tensor(emotion_pred['feats']).to(device)
-        emotion_label = emotion_pred['labels'][0]
         l_emo = f.l1_loss(emotion_emb_pred, emotion_emb_trg)
 
-        # emotion classification loss ===
-        logits = emotion_classifier(emotion_emb_pred.detach())
+        # === emotion classification loss ===
+        # Get only the English label part (after '/')
+        emotion_label_str = emotion_pred['labels'][0]
+        if '/' in emotion_label_str:
+            emotion_label_str = emotion_label_str.split('/')[-1]
+        emo2idx = dataloader.dataset.emo2idx
+        emotion_label_idx = torch.tensor([emo2idx[emotion_label_str]], device=device)
+        logits = emotion_classifier(emotion_emb_pred.detach().unsqueeze(0))  # shape: (1, num_classes)
         # Compares it to the ground truth emotion label using cross-entropy loss
-        ce_loss = f.cross_entropy(logits, emotion_label)
+        ce_loss = f.cross_entropy(logits, emotion_label_idx)
 
         # === Combine losses ===
         total_loss = recon_loss + recon_loss_post * mu + content_loss * lamda + l_emo * lamda_emo + ce_loss
