@@ -23,30 +23,35 @@ The project also integrates a HiFi-GAN vocoder for high-quality waveform synthes
 voice-style-project/
 ├── config.json
 ├── main.py
-├── requirements.txt
+├── requirements.txt         
 ├── README.md
-├── data/
+├── 3000000-BL.ckpt          
+├── data/               
 ├── models/
 │   ├── autoVC/
 │   │   ├── autovc.py
+│   │   ├── blocks.py
 │   │   ├── content_encoder.py
 │   │   ├── decoder.py
 │   │   ├── postnet.py
 │   │   ├── speaker_encoder.py
-│   ├── EmotionClassifier.py
-│   └── hifigan_pretrained/
-│       ├── config.json
-│       └── generator_v1
+│   │   ├── pretrained_speaker_encoder.py
+│   ├── emotion_classifier.py
+│   ├── hifigan_pretrained/
+│   │   ├── config.json
+│   │   └── generator_v1
+│   ├── wavenet_pretrained/
+│   ├── wavenet.py
 ├── scripts/
 │   ├── train.py
 │   ├── inference.py
 │   └── utils/
-│       ├── emotion_accuracy.py
+│       ├── emotion_utils.py
 │       ├── mel_dataset.py
 │       ├── converter.py
+├── wavenet_vocoder/        
 ├── notebooks/
-│   └── test_autoVC.py
-└── tests/
+├── tests/
 
 ```
 
