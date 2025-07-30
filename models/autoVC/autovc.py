@@ -106,6 +106,7 @@ class AutoVC(nn.Module):
             emotion_vec = emotion_embedding  # (B, 256)
         else:
             emotion_vec = self.emotion_embedding(emotion_label)  # (B, 128)
+            emotion_vec = self.emotion_proj(emotion_vec)
 
         emotion_exp = emotion_vec.unsqueeze(1).expand(-1, T, -1)  # (B, T, 128)
 

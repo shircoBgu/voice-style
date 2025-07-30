@@ -8,7 +8,10 @@ import matplotlib.pyplot as plt
 from scipy.io.wavfile import write
 from hifigan.models import Generator
 from hifigan.env import AttrDict
-from wavenet_vocoder.wavenet_vocoder import WaveNet
+from scripts.utils.emotion_utils import extract_emotion_embedding
+
+
+# from wavenet_vocoder.wavenet_vocoder import WaveNet
 
 
 def extract_epoch_num(filename):
@@ -54,42 +57,44 @@ class VoiceConverter:
             raise ValueError("Checkpoint missing 'model_state'")
 
     def load_wavenet(self):
-        wavenet_dir = self.config["paths"]["pretrained_wavenet"]
-        config_path = os.path.join(wavenet_dir, "20180510_mixture_lj_checkpoint_step000320000_ema.json")
-        checkpoint_path = os.path.join(wavenet_dir, "20180510_mixture_lj_checkpoint_step000320000_ema.pth")
+        # wavenet_dir = self.config["paths"]["pretrained_wavenet"]
+        # config_path = os.path.join(wavenet_dir, "20180510_mixture_lj_checkpoint_step000320000_ema.json")
+        # checkpoint_path = os.path.join(wavenet_dir, "20180510_mixture_lj_checkpoint_step000320000_ema.pth")
+        #
+        # if not os.path.exists(config_path) or not os.path.exists(checkpoint_path):
+        #     raise FileNotFoundError("WaveNet model or config not found")
+        #
+        # # Load hparams
+        # with open(config_path) as f:
+        #     hparams = json.load(f)
+        #
+        # self.wavenet_config = hparams  # Save for inference
+        # model = WaveNet(
+        #     out_channels=30,
+        #     layers=24,
+        #     stacks=4,
+        #     residual_channels=512,
+        #     gate_channels=512,
+        #     skip_out_channels=256,
+        #     kernel_size=3,
+        #     dropout=0.05,
+        #     cin_channels=80,
+        #     gin_channels=-1,
+        #     upsample_conditional_features=True,
+        #     upsample_net="ConvInUpsampleNetwork",
+        #     upsample_params={
+        #         "upsample_scales": [4, 4, 4, 4],
+        #         "freq_axis_kernel_size": 3
+        #     },
+        #     scalar_input=True,
+        #     output_distribution="Logistic"
+        # )
+        # checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
+        # model.load_state_dict(checkpoint["state_dict"])
+        # model.eval()
+        # self.wavenet_model = model.to(self.device)
+        pass
 
-        if not os.path.exists(config_path) or not os.path.exists(checkpoint_path):
-            raise FileNotFoundError("WaveNet model or config not found")
-
-        # Load hparams
-        with open(config_path) as f:
-            hparams = json.load(f)
-
-        self.wavenet_config = hparams  # Save for inference
-        model = WaveNet(
-            out_channels=30,
-            layers=24,
-            stacks=4,
-            residual_channels=512,
-            gate_channels=512,
-            skip_out_channels=256,
-            kernel_size=3,
-            dropout=0.05,
-            cin_channels=80,
-            gin_channels=-1,
-            upsample_conditional_features=True,
-            upsample_net="ConvInUpsampleNetwork",
-            upsample_params={
-                "upsample_scales": [4, 4, 4, 4],
-                "freq_axis_kernel_size": 3
-            },
-            scalar_input=True,
-            output_distribution="Logistic"
-        )
-        checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
-        model.load_state_dict(checkpoint["state_dict"])
-        model.eval()
-        self.wavenet_model = model.to(self.device)
 
     def load_hifigan(self):
         hifigan_dir = self.config["paths"]["hifigan_pretrained"]
@@ -160,6 +165,8 @@ class VoiceConverter:
         load_mel = self.load_mel_from_npy if use_npy else self.load_audio_as_mel
         source_mel = load_mel(source_path)
         target_mel = load_mel(target_path, target_len=source_mel.shape[1])
+        emo_idx = self.emo2idx[emotion_label]
+        emotion_label = torch.tensor([emo_idx], dtype=torch.long, device=self.device)
 
         with torch.no_grad():
             mel_out, _, _, _, _, _ = self.autovc_model(source_mel, target_mel, emotion_label=emotion_label)
