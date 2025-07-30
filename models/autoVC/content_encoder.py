@@ -5,14 +5,14 @@ from models.autoVC.blocks import ConvNorm  # uses Xavier init with gain
 import torch
 import torch.nn as nn
 
-"""
-Based on AutoVC encoder:
-    - 3 Conv1D layers with InstanceNorm
-    - 1 Bidirectional LSTM
-"""
-
 
 class ContentEncoder(nn.Module):
+    """
+    Based on AutoVC encoder:
+        - 3 Conv1D layers with BatchNorm1d
+        - 1 Bidirectional LSTM
+    """
+
     def __init__(self, speaker_dim, dim_neck=32, freq=32):
         super(ContentEncoder, self).__init__()
         self.freq = freq

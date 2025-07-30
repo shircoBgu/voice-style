@@ -13,10 +13,10 @@ def inference(config, source_path, target_path, output_path, vocoder_type, use_n
         config (dict): Loaded configuration dictionary.
         source_path (str): Path to source audio file.
         target_path (str): Path to target speaker audio file.
-        emotion_label (str): Target emotion label.
         output_path (str): Path to save the converted audio.
-        use_npy (bool): Whether input files are mel spectograms (npy)
         vocoder_type: chosen vocoder
+        use_npy (bool): Whether input files are mel spectograms (npy)
+        emotion_label (str): Target emotion label.
     """
     # Initialize the voice converter
     converter = VoiceConverter(config)

@@ -45,20 +45,31 @@ class AutoVC(nn.Module):
 
     def forward(self, source_mel, target_mel, emotion_embedding=None, emotion_label=None):
         """
-        Forward pass of the AutoVC model.
+        Forward pass of the AutoVC-based model with emotion conditioning.
+                Args:
+                    source_mel (Tensor): Tensor of shape (B, T, 80)
+                        Mel-spectrogram of the source utterance, providing linguistic content.
+                    target_mel (Tensor): Tensor of shape (B, T', 80)
+                        Mel-spectrogram reference for the target speaker, used to extract identity embedding.
+                    emotion_embedding (Tensor, optional): Tensor of shape (B, D)
+                        Optional continuous emotion representation (e.g., from emotion2vec).
+                        Will be projected internally to match expected dimension.
+                    emotion_label (Tensor, optional): Tensor of shape (B,)
+                        Optional categorical emotion label index. Used if no continuous embedding is provided.
 
-        Args:
-            source_mel (Tensor): Tensor of shape (B, T, 80)
-                The mel-spectrogram of the source speaker's utterance.
-            target_mel (Tensor): Tensor of shape (B, T', 80)
-                A reference mel-spectrogram of the target speaker (for identity).
-            emotion_label (Tensor): Tensor of shape (B,)
-                Categorical emotion label index (e.g., 0 = 'neutral', 1 = 'happy', etc.).
-
-        Returns:
-            mel_pred (Tensor): Reconstructed mel-spectrogram of shape (B, T, 80)
-                in the target speaker's voice and intended emotional style.
-            spk_logits: (B, num_speakers) — for speaker classification loss
+                Returns:
+                    mel_pred (Tensor): Tensor of shape (B, T, 80)
+                        Final reconstructed mel-spectrogram, post postnet (if enabled).
+                    mel_out (Tensor): Tensor of shape (B, T, 80)
+                        Raw decoder output before refinement by the postnet.
+                    content_emb (Tensor): Tensor of shape (B, T, 64)
+                        Concatenated content embedding from the content encoder.
+                    spk_logits (Tensor): Tensor of shape (B, num_speakers)
+                        Output logits from the speaker classifier (used for speaker classification loss).
+                    src_speaker_emb (Tensor): Tensor of shape (B, 256)
+                        Speaker embedding extracted from the source utterance.
+                    tgt_speaker_emb (Tensor): Tensor of shape (B, 256)
+                        Speaker embedding extracted from the target reference (used for conditioning and speaker loss).
         """
 
         B, T, _ = source_mel.shape

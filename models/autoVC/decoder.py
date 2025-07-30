@@ -3,15 +3,15 @@
 import torch.nn as nn
 from models.autoVC.blocks import ConvNorm, LinearNorm
 
-"""
+
+class Decoder(nn.Module):
+    """
     AutoVC-style decoder:
     - LSTM → Conv stack → LSTM → Linear
     - Takes bottleneck as input (Content + Speaker + Emotion)
     - Reconstructs mel-spectrogram
     """
 
-
-class Decoder(nn.Module):
     # input_dim = 64 + 256 + 768 = 1088:
     # dim_neck = 32 → content_dim = 2 * dim_neck = 64
     # speaker_emb_dim = 256 (from pretrained speaker encoder)

@@ -53,21 +53,31 @@ def extract_epoch_num(filename):
         return -1
 
 
-'''
-Defines one full training epoch.
-model: our AutoVC model
-emotion_classifier: auxiliary classifier used for the emotion loss
-dataloader: yields batches of (source, target, emotion)
-optimizer: for AutoVC
-optimizer_cls: for the emotion classifier
-device: usually "cuda" or "cpu"
-lambda_ce: weight for the emotion classification loss
-lambda_spk: weight for the speaker loss
-'''
-
-
 def train_one_epoch(model, emotion_classifier, dataloader, optimizer, optimizer_cls,
                     device, lamda=1, mu=1, lamda_emo=0.5, global_step=0):
+    """
+    Performs one full training epoch over the provided dataloader.
+
+    Args:
+        model: The main AutoVC model, including content encoder, decoder, postnet, and auxiliary modules.
+        emotion_classifier: A classifier used to supervise the emotion embedding via cross-entropy loss.
+        dataloader: Yields batches of (source_mel, target_mel, emotion_label, speaker_label, src_wav_path, tgt_wav_path).
+        optimizer: Optimizer for the AutoVC model.
+        optimizer_cls: Optimizer for the emotion classifier.
+        device: The device to run computations on ("cuda" or "cpu").
+        lamda (float): Weight for the content embedding reconstruction loss.
+        mu (float): Weight for the postnet-enhanced reconstruction loss.
+        lamda_emo (float): Weight for the emotion embedding (L1) loss.
+        global_step (int): Global training step, used for logging and plotting.
+
+    Returns:
+        avg_recon (float): Average reconstruction loss across batches.
+        avg_recon_post (float): Average postnet reconstruction loss.
+        avg_content_loss (float): Average L1 loss between content embeddings.
+        avg_emo (float): Average L1 loss between predicted and ground-truth emotion embeddings.
+        avg_ce_loss (float): Average cross-entropy loss from the emotion classifier.
+        global_step (int): Updated global training step counter.
+    """
     # Puts both models into training mode.
     model.train()
     emotion_classifier.train()
@@ -172,21 +182,29 @@ def train(model, emotion_classifier, dataloader,
           num_epochs=10, lamda=1, mu=1, lamda_emo=0.5,
           checkpoint_dir="checkpoints"):
     """
-    Trains the model over multiple epochs.
-    Args:
-        model: AutoVC model
-        emotion_classifier: auxiliary emotion classifier
-        dataloader: PyTorch DataLoader
-        optimizer: optimizer for the AutoVC model
-        optimizer_cls: optimizer for the classifier
-        device: "cuda" or "cpu"
-        num_epochs: number of epochs to train
-        lamda: weights for losses
-        mu: weights for losses
-        lamda_emo: weight for emotion classification loss
-        checkpoint_dir: directory to save model checkpoints
-    """
+    Trains the AutoVC model and auxiliary emotion classifier over multiple epochs.
 
+    Args:
+        model: The full AutoVC model, including encoder, decoder, postnet, and speaker modules.
+        emotion_classifier: Auxiliary classifier used to supervise emotion embeddings via cross-entropy loss.
+        dataloader: A PyTorch DataLoader yielding training batches, each with mel-spectrograms, labels, and paths.
+        optimizer: Optimizer for updating the AutoVC model parameters.
+        optimizer_cls: Optimizer for updating the emotion classifier parameters.
+        device: Device to run computations on ("cuda" or "cpu").
+        num_epochs (int): Total number of training epochs.
+        lamda (float): Weight for the content embedding reconstruction loss.
+        mu (float): Weight for the postnet-enhanced mel reconstruction loss.
+        lamda_emo (float): Weight for the L1 loss on emotion embeddings.
+        checkpoint_dir (str): Directory where model checkpoints and loss history will be saved.
+
+    Returns:
+        history (dict): A dictionary containing loss histories across all epochs with keys:
+            - "recon": basic mel reconstruction loss
+            - "recon_post": postnet-enhanced reconstruction loss
+            - "content_recon": content embedding consistency loss
+            - "emotion": L1 loss between predicted and ground-truth emotion embeddings
+            - "emotion_ce": cross-entropy loss from the emotion classifier
+    """
     os.makedirs(checkpoint_dir, exist_ok=True)
     history_path = os.path.join(checkpoint_dir, "train_history.pt")
 
