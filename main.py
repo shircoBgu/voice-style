@@ -77,7 +77,8 @@ def main():
                   target_path=args.target,
                   output_path=args.output,
                   vocoder_type=args.vocoder,
-                  use_npy=args.use_npy)
+                  use_npy=args.use_npy,
+                  emotion_label=args.emotion)
 
 
 if __name__ == "__main__":

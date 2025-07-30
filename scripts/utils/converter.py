@@ -153,7 +153,7 @@ class VoiceConverter:
 
         return mel.unsqueeze(0).to(self.device)  # shape: (1, T, 80)
 
-    def convert(self, source_path, target_path, output_path, use_npy=False):
+    def convert(self, source_path, target_path, output_path, use_npy=False, emotion_label=None):
         if not all([self.autovc_model, self.hifigan_model]):
             raise RuntimeError("Models not loaded")
 
@@ -162,7 +162,7 @@ class VoiceConverter:
         target_mel = load_mel(target_path, target_len=source_mel.shape[1])
 
         with torch.no_grad():
-            mel_out, _, _, _, _, _ = self.autovc_model(source_mel, target_mel)
+            mel_out, _, _, _, _, _ = self.autovc_model(source_mel, target_mel, emotion_label=emotion_label)
             audio = self.hifigan_model(mel_out.transpose(1, 2)).squeeze().cpu().numpy()
             # === Plot and Save AutoVC Output Mel-Spectrogram ===
             mel_out_np = mel_out.squeeze(0).cpu().numpy().T  # Shape: (80, T)

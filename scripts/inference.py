@@ -39,5 +39,6 @@ def inference(config, source_path, target_path, output_path, vocoder_type, use_n
         source_path=source_path,
         target_path=target_path,
         output_path=output_path,
-        use_npy=use_npy
+        use_npy=use_npy,
+        emotion_label=emotion_label
     )
