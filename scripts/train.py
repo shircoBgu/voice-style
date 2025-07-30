@@ -220,7 +220,7 @@ def train(model, emotion_classifier, dataloader,
         key=extract_epoch_num
     )
     cls_ckpts = sorted(
-        glob.glob(os.path.join(checkpoint_dir, "emotion_cls_epoch*.pt")),
+        glob.glob(os.path.join(checkpoint_dir, "emotion_epoch*.pt")),
         key=extract_epoch_num
     )
 
